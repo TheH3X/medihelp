@@ -63,6 +63,7 @@ function CalculatorEditor() {
     type: "number",
     tooltip: "",
     storable: false,
+    options: []
   });
   
   const [newQuestion, setNewQuestion] = useState<ScreeningQuestion>({
@@ -127,6 +128,7 @@ function CalculatorEditor() {
       type: "number",
       tooltip: "",
       storable: false,
+      options: []
     });
     
     setIsAddingParameter(false);
@@ -159,6 +161,7 @@ function CalculatorEditor() {
       type: "number",
       tooltip: "",
       storable: false,
+      options: []
     });
     
     setIsEditingParameter(false);
@@ -167,7 +170,15 @@ function CalculatorEditor() {
   
   const handleEditParameterClick = (index: number) => {
     setEditingParameterIndex(index);
-    setNewParameter({...calculator.parameters[index]});
+    // Make a deep copy of the parameter to avoid reference issues
+    const paramToEdit = {...calculator.parameters[index]};
+    
+    // Ensure options is defined if it's a select type
+    if (paramToEdit.type === 'select' && !paramToEdit.options) {
+      paramToEdit.options = [];
+    }
+    
+    setNewParameter(paramToEdit);
     setIsEditingParameter(true);
   };
   
