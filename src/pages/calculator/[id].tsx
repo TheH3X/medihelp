@@ -9,9 +9,10 @@ import { ScreeningChecklist } from "@/components/calculators/ScreeningChecklist"
 import { ResultsDisplay } from "@/components/results/ResultsDisplay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calculator } from "lucide-react";
+import { ArrowLeft, Calculator, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CalculatorPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ export default function CalculatorPage() {
   const [result, setResult] = useState<any>(null);
   const [screeningComplete, setScreeningComplete] = useState(false);
   const [activeTab, setActiveTab] = useState("screening");
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   // Create a mapping of parameter IDs to their display names
   const parameterLabels: Record<string, string> = {};
@@ -55,10 +57,32 @@ export default function CalculatorPage() {
       ...prev,
       [id]: value
     }));
+    
+    // Clear validation error when user changes input
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
+  
+  const validateInputs = () => {
+    if (!calculator) return false;
+    
+    const missingInputs = calculator.parameters.filter(param => {
+      const value = inputs[param.id];
+      return value === undefined || value === null || value === '';
+    });
+    
+    if (missingInputs.length > 0) {
+      const missingNames = missingInputs.map(param => param.name).join(', ');
+      setValidationError(`Please fill in all required fields: ${missingNames}`);
+      return false;
+    }
+    
+    return true;
   };
   
   const handleCalculate = () => {
-    if (calculator) {
+    if (calculator && validateInputs()) {
       const calculationResult = calculator.calculate(inputs);
       setResult(calculationResult);
       setActiveTab("results");
@@ -133,7 +157,7 @@ export default function CalculatorPage() {
               
               <TabsContent value="calculator" className="mt-6">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <CardTitle>Input Parameters</CardTitle>
                     <CardDescription>
                       Enter the required information to calculate the {calculator.name}
@@ -141,7 +165,7 @@ export default function CalculatorPage() {
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[400px] pr-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {calculator.parameters.map((param) => (
                           <InputField
                             key={param.id}
@@ -153,8 +177,16 @@ export default function CalculatorPage() {
                       </div>
                     </ScrollArea>
                   </CardContent>
-                  <CardFooter>
-                    <Button onClick={handleCalculate} className="ml-auto">
+                  <CardFooter className="flex flex-col items-end gap-2">
+                    {validationError && (
+                      <Alert variant="destructive" className="w-full">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          {validationError}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <Button onClick={handleCalculate}>
                       Calculate Score
                     </Button>
                   </CardFooter>

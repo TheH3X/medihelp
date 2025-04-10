@@ -31,14 +31,14 @@ export function InputField({ parameter, value, onChange }: InputFieldProps) {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <Label htmlFor={parameter.id}>{parameter.name}</Label>
+          <Label htmlFor={parameter.id} className="text-sm">{parameter.name}</Label>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help ml-1" />
+                <InfoIcon className="h-3 w-3 text-muted-foreground cursor-help ml-1" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p>{parameter.tooltip}</p>
@@ -52,7 +52,7 @@ export function InputField({ parameter, value, onChange }: InputFieldProps) {
             variant="outline" 
             size="sm" 
             onClick={handleSaveParameter}
-            className="h-7 px-2"
+            className="h-6 px-2"
           >
             <Save className="h-3 w-3 mr-1" />
             Save
@@ -66,7 +66,7 @@ export function InputField({ parameter, value, onChange }: InputFieldProps) {
           type="number"
           value={value || ''}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-          className="w-full"
+          className="w-full h-8"
         />
       )}
 
@@ -76,20 +76,20 @@ export function InputField({ parameter, value, onChange }: InputFieldProps) {
           onValueChange={(val) => onChange(val === "true")}
           className="flex space-x-4"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <RadioGroupItem value="true" id={`${parameter.id}-yes`} />
-            <Label htmlFor={`${parameter.id}-yes`} className="font-normal text-sm">Yes</Label>
+            <Label htmlFor={`${parameter.id}-yes`} className="font-normal text-xs">Yes</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <RadioGroupItem value="false" id={`${parameter.id}-no`} />
-            <Label htmlFor={`${parameter.id}-no`} className="font-normal text-sm">No</Label>
+            <Label htmlFor={`${parameter.id}-no`} className="font-normal text-xs">No</Label>
           </div>
         </RadioGroup>
       )}
 
       {parameter.type === 'select' && parameter.options && (
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger>
+          <SelectTrigger className="h-8">
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
