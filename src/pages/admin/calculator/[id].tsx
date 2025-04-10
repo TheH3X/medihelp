@@ -73,7 +73,13 @@ function CalculatorEditor() {
     eliminationMessage: "",
   });
   
-  const [newRange, setNewRange] = useState({
+  // Fix: Make severity optional in the type to match the calculator definition
+  const [newRange, setNewRange] = useState<{
+    min: number;
+    max: number;
+    interpretation: string;
+    severity: string;
+  }>({
     min: 0,
     max: 0,
     interpretation: "",
@@ -319,7 +325,12 @@ function CalculatorEditor() {
   
   const handleEditRangeClick = (index: number) => {
     setEditingRangeIndex(index);
-    setNewRange({...calculator.interpretations.ranges[index]});
+    // Fix: Ensure severity is always set, defaulting to 'low' if not present
+    const range = calculator.interpretations.ranges[index];
+    setNewRange({
+      ...range,
+      severity: range.severity || "low"
+    });
     setIsEditingRange(true);
   };
   
