@@ -6,6 +6,7 @@ import { Copy, Printer, AlertCircle, CheckCircle, AlertTriangle } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { formatClinicalText, formatPrinterFriendly } from "@/lib/result-formatter";
 import { AlgorithmDiagram } from "./AlgorithmDiagram";
+import { CVRiskResultsMatrix } from "./CVRiskResultsMatrix";
 import type { CalculationResult } from "@/lib/calculator-definitions";
 
 interface ResultsDisplayProps {
@@ -96,6 +97,26 @@ export function ResultsDisplay({ calculatorName, calculatorId, result, inputs, p
     }
   };
 
+  // Determine if this is the combined CV risk calculator
+  const isCombinedCVRisk = calculatorId === 'combined-cv-risk';
+  
+  // Adjust tabs based on calculator type
+  const tabsList = isCombinedCVRisk ? (
+    <TabsList className="grid w-full grid-cols-4">
+      <TabsTrigger value="web">Web View</TabsTrigger>
+      <TabsTrigger value="matrix">Treatment Matrix</TabsTrigger>
+      <TabsTrigger value="clinical">Clinical Text</TabsTrigger>
+      <TabsTrigger value="print">Print View</TabsTrigger>
+    </TabsList>
+  ) : (
+    <TabsList className="grid w-full grid-cols-4">
+      <TabsTrigger value="web">Web View</TabsTrigger>
+      <TabsTrigger value="algorithm">Algorithm</TabsTrigger>
+      <TabsTrigger value="clinical">Clinical Text</TabsTrigger>
+      <TabsTrigger value="print">Print View</TabsTrigger>
+    </TabsList>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -109,17 +130,12 @@ export function ResultsDisplay({ calculatorName, calculatorId, result, inputs, p
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="web" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="web">Web View</TabsTrigger>
-            <TabsTrigger value="algorithm">Algorithm</TabsTrigger>
-            <TabsTrigger value="clinical">Clinical Text</TabsTrigger>
-            <TabsTrigger value="print">Print View</TabsTrigger>
-          </TabsList>
+          {tabsList}
           
           <TabsContent value="web" className="mt-4 space-y-4">
             <div className="flex items-center justify-center">
               <div className={`text-4xl font-bold rounded-full h-16 w-16 flex items-center justify-center ${getSeverityColor()}`}>
-                {result.score}
+                {typeof result.score === 'number' ? result.score.toFixed(1) : result.score}
               </div>
             </div>
             
@@ -143,16 +159,27 @@ export function ResultsDisplay({ calculatorName, calculatorId, result, inputs, p
             </div>
           </TabsContent>
           
-          <TabsContent value="algorithm" className="mt-4">
-            <AlgorithmDiagram 
-              calculatorId={calculatorId}
-              result={result}
-              inputs={inputs}
-            />
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              <p>This diagram shows the algorithm path based on your inputs, with the highlighted path indicating the result.</p>
-            </div>
-          </TabsContent>
+          {!isCombinedCVRisk && (
+            <TabsContent value="algorithm" className="mt-4">
+              <AlgorithmDiagram 
+                calculatorId={calculatorId}
+                result={result}
+                inputs={inputs}
+              />
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                <p>This diagram shows the algorithm path based on your inputs, with the highlighted path indicating the result.</p>
+              </div>
+            </TabsContent>
+          )}
+          
+          {isCombinedCVRisk && (
+            <TabsContent value="matrix" className="mt-4">
+              <CVRiskResultsMatrix 
+                result={result}
+                inputs={inputs}
+              />
+            </TabsContent>
+          )}
           
           <TabsContent value="clinical" className="mt-4">
             <div className="bg-muted p-4 rounded-md">

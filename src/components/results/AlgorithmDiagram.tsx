@@ -51,6 +51,9 @@ export function AlgorithmDiagram({ calculatorId, result, inputs }: AlgorithmDiag
       case 'cv-risk':
         drawCVRiskAlgorithm(ctx, result, inputs);
         break;
+      case 'combined-cv-risk':
+        drawCombinedCVRiskAlgorithm(ctx, result, inputs);
+        break;
       default:
         drawGenericAlgorithm(ctx, result);
     }
@@ -111,7 +114,7 @@ function drawBox(
   ctx.textBaseline = 'middle';
   
   // Handle multiline text
-  const lines = text.split('\\\\n');
+  const lines = text.split('\\\\\n');
   const lineHeight = 16;
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   
@@ -190,7 +193,7 @@ function drawHasbledAlgorithm(
   if (inputs.labilePTINR) score += 1;
   
   // Draw start box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'HAS-BLED\\\\nScore Calculation');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'HAS-BLED\\\\\nScore Calculation');
   
   // Draw score box
   drawBox(
@@ -219,7 +222,7 @@ function drawHasbledAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\n(0-1)',
+    'Low Risk\\\\\n(0-1)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -231,7 +234,7 @@ function drawHasbledAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Intermediate Risk\\\\n(2-3)',
+    'Intermediate Risk\\\\\n(2-3)',
     isIntermediateRisk,
     isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -243,7 +246,7 @@ function drawHasbledAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'High Risk\\\\n(≥4)',
+    'High Risk\\\\\n(≥4)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
@@ -276,7 +279,7 @@ function drawCha2ds2vascAlgorithm(
   if (inputs.gender === 'female') score += 1;
   
   // Draw start box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CHA₂DS₂-VASc\\\\nScore Calculation');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CHA₂DS₂-VASc\\\\\nScore Calculation');
   
   // Draw score box
   drawBox(
@@ -305,7 +308,7 @@ function drawCha2ds2vascAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\n(0)',
+    'Low Risk\\\\\n(0)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -317,7 +320,7 @@ function drawCha2ds2vascAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Low-Moderate Risk\\\\n(1)',
+    'Low-Moderate Risk\\\\\n(1)',
     isLowModerateRisk,
     isLowModerateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -329,7 +332,7 @@ function drawCha2ds2vascAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Moderate-High Risk\\\\n(≥2)',
+    'Moderate-High Risk\\\\\n(≥2)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
@@ -355,7 +358,7 @@ function drawFib4Algorithm(
   const roundedScore = parseFloat(fib4Score.toFixed(2));
   
   // Draw formula box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'FIB-4 = (Age × AST) /\\\\n(Platelets × √ALT)');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'FIB-4 = (Age × AST) /\\\\\n(Platelets × √ALT)');
   
   // Draw score box
   drawBox(
@@ -394,7 +397,7 @@ function drawFib4Algorithm(
       260, 
       boxWidth, 
       boxHeight, 
-      'Low Fibrosis\\\\n(<1.30)',
+      'Low Fibrosis\\\\\n(<1.30)',
       isLowRisk,
       isLowRisk ? '#dcfce7' : '#e2e8f0'
     );
@@ -405,7 +408,7 @@ function drawFib4Algorithm(
       260, 
       boxWidth, 
       boxHeight, 
-      'Intermediate\\\\n(1.30-2.67)',
+      'Intermediate\\\\\n(1.30-2.67)',
       isIntermediateRisk,
       isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
     );
@@ -416,7 +419,7 @@ function drawFib4Algorithm(
       260, 
       boxWidth, 
       boxHeight, 
-      'Advanced Fibrosis\\\\n(>2.67)',
+      'Advanced Fibrosis\\\\\n(>2.67)',
       isHighRisk,
       isHighRisk ? '#fee2e2' : '#e2e8f0'
     );
@@ -444,7 +447,7 @@ function drawFib4Algorithm(
       260, 
       boxWidth, 
       boxHeight, 
-      'Low Fibrosis\\\\n(<2.0)',
+      'Low Fibrosis\\\\\n(<2.0)',
       isLowRisk,
       isLowRisk ? '#dcfce7' : '#e2e8f0'
     );
@@ -455,7 +458,7 @@ function drawFib4Algorithm(
       260, 
       boxWidth, 
       boxHeight, 
-      'Intermediate\\\\n(2.0-4.0)',
+      'Intermediate\\\\\n(2.0-4.0)',
       isIntermediateRisk,
       isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
     );
@@ -466,7 +469,7 @@ function drawFib4Algorithm(
       260, 
       boxWidth, 
       boxHeight, 
-      'Advanced Fibrosis\\\\n(>4.0)',
+      'Advanced Fibrosis\\\\\n(>4.0)',
       isHighRisk,
       isHighRisk ? '#fee2e2' : '#e2e8f0'
     );
@@ -528,7 +531,7 @@ function drawDas28Algorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Remission\\\\n(≤2.6)',
+    'Remission\\\\\n(≤2.6)',
     isRemission,
     isRemission ? '#dcfce7' : '#e2e8f0'
   );
@@ -539,7 +542,7 @@ function drawDas28Algorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Low Activity\\\\n(2.61-3.2)',
+    'Low Activity\\\\\n(2.61-3.2)',
     isLowActivity,
     isLowActivity ? '#d1fae5' : '#e2e8f0'
   );
@@ -550,7 +553,7 @@ function drawDas28Algorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Moderate Activity\\\\n(3.21-5.1)',
+    'Moderate Activity\\\\\n(3.21-5.1)',
     isModerateActivity,
     isModerateActivity ? '#fef9c3' : '#e2e8f0'
   );
@@ -561,7 +564,7 @@ function drawDas28Algorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'High Activity\\\\n(>5.1)',
+    'High Activity\\\\\n(>5.1)',
     isHighActivity,
     isHighActivity ? '#fee2e2' : '#e2e8f0'
   );
@@ -601,7 +604,7 @@ function drawFraminghamAlgorithm(
     100, 
     boxWidth, 
     boxHeight*1.5, 
-    `Inputs:\\\\nAge: ${age}, ${gender}\\\\nTC: ${tc}, HDL: ${hdl}\\\\nSBP: ${sbp}, Treated: ${treated}\\\\nSmoker: ${smoker}`,
+    `Inputs:\\\\\nAge: ${age}, ${gender}\\\\\nTC: ${tc}, HDL: ${hdl}\\\\\nSBP: ${sbp}, Treated: ${treated}\\\\\nSmoker: ${smoker}`,
     false,
     '#e2e8f0'
   );
@@ -638,7 +641,7 @@ function drawFraminghamAlgorithm(
     220, 
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\n(<5%)',
+    'Low Risk\\\\\n(<5%)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -650,7 +653,7 @@ function drawFraminghamAlgorithm(
     220, 
     boxWidth, 
     boxHeight, 
-    'Moderate Risk\\\\n(5-10%)',
+    'Moderate Risk\\\\\n(5-10%)',
     isModerateRisk,
     isModerateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -662,7 +665,7 @@ function drawFraminghamAlgorithm(
     220, 
     boxWidth, 
     boxHeight, 
-    'High Risk\\\\n(10-20%)',
+    'High Risk\\\\\n(10-20%)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
@@ -674,7 +677,7 @@ function drawFraminghamAlgorithm(
     220, 
     boxWidth, 
     boxHeight, 
-    'Very High Risk\\\\n(≥20%)',
+    'Very High Risk\\\\\n(≥20%)',
     isVeryHighRisk,
     isVeryHighRisk ? '#fecaca' : '#e2e8f0'
   );
@@ -733,7 +736,7 @@ function drawCVRiskAlgorithm(
     200, 
     boxWidth, 
     boxHeight, 
-    'Needs Framingham\\\\nScoring',
+    'Needs Framingham\\\\\nScoring',
     needsFramingham,
     needsFramingham ? '#e2e8f0' : '#e2e8f0'
   );
@@ -796,6 +799,171 @@ function drawCVRiskAlgorithm(
   } else if (isVeryHighRisk) {
     drawArrow(ctx, 3*width/4, 250, width/2 + boxWidth*0.3, 260, '', true);
   }
+}
+
+function drawCombinedCVRiskAlgorithm(
+  ctx: CanvasRenderingContext2D, 
+  result: CalculationResult, 
+  inputs: Record<string, any>
+) {
+  const width = ctx.canvas.width / window.devicePixelRatio;
+  const height = ctx.canvas.height / window.devicePixelRatio;
+  const boxWidth = 140;
+  const boxHeight = 50;
+  
+  // Extract additional data
+  const additionalData = result.additionalData || {};
+  const needsFramingham = additionalData.needsFramingham;
+  const isHighRisk = additionalData.isHighRisk;
+  const isVeryHighRisk = additionalData.isVeryHighRisk;
+  const framinghamRisk = result.score;
+  
+  // Draw title box
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'Combined CV Risk\\\\\nAssessment');
+  
+  // Draw initial assessment box
+  drawBox(
+    ctx, 
+    width/2 - boxWidth/2, 
+    80, 
+    boxWidth, 
+    boxHeight, 
+    'Initial Risk\\\\\nAssessment',
+    true
+  );
+  
+  // Draw arrow from title to initial assessment
+  drawArrow(ctx, width/2, 70, width/2, 80, '', true);
+  
+  // Draw risk category paths
+  if (isVeryHighRisk) {
+    // Very high risk path
+    drawBox(
+      ctx, 
+      3*width/4 - boxWidth/2, 
+      160, 
+      boxWidth, 
+      boxHeight, 
+      'Very High Risk\\\\\nCriteria Met',
+      true,
+      '#fee2e2'
+    );
+    
+    drawArrow(ctx, width/2 + 40, 130, 3*width/4, 160, 'Auto Very High', true);
+    
+    drawBox(
+      ctx, 
+      3*width/4 - boxWidth/2, 
+      240, 
+      boxWidth, 
+      boxHeight, 
+      `Risk: 30%\\\\\nLDL Target: <1.4`,
+      true,
+      '#fecaca'
+    );
+    
+    drawArrow(ctx, 3*width/4, 210, 3*width/4, 240, '', true);
+  } 
+  else if (isHighRisk) {
+    // High risk path
+    drawBox(
+      ctx, 
+      width/2 - boxWidth/2, 
+      160, 
+      boxWidth, 
+      boxHeight, 
+      'High Risk\\\\\nCriteria Met',
+      true,
+      '#fee2e2'
+    );
+    
+    drawArrow(ctx, width/2, 130, width/2, 160, 'Auto High', true);
+    
+    drawBox(
+      ctx, 
+      width/2 - boxWidth/2, 
+      240, 
+      boxWidth, 
+      boxHeight, 
+      `Risk: 15%\\\\\nLDL Target: <1.8`,
+      true,
+      '#fee2e2'
+    );
+    
+    drawArrow(ctx, width/2, 210, width/2, 240, '', true);
+  }
+  else {
+    // Framingham path
+    drawBox(
+      ctx, 
+      width/4 - boxWidth/2, 
+      160, 
+      boxWidth, 
+      boxHeight, 
+      'Needs Framingham\\\\\nScoring',
+      true,
+      '#e2e8f0'
+    );
+    
+    drawArrow(ctx, width/2 - 40, 130, width/4, 160, 'No auto criteria', true);
+    
+    // Framingham calculation box
+    drawBox(
+      ctx, 
+      width/4 - boxWidth/2, 
+      240, 
+      boxWidth, 
+      boxHeight, 
+      'Framingham\\\\\nCalculation',
+      true
+    );
+    
+    drawArrow(ctx, width/4, 210, width/4, 240, '', true);
+    
+    // Framingham result box
+    drawBox(
+      ctx, 
+      width/4 - boxWidth/2, 
+      320, 
+      boxWidth, 
+      boxHeight, 
+      `Risk: ${framinghamRisk.toFixed(1)}%`,
+      true,
+      getRiskColor(framinghamRisk)
+    );
+    
+    drawArrow(ctx, width/4, 290, width/4, 320, '', true);
+  }
+  
+  // Draw treatment recommendation box
+  const ldlTarget = additionalData.ldlTarget || '';
+  const treatmentRecommendation = additionalData.treatmentRecommendation || '';
+  
+  drawBox(
+    ctx, 
+    width/2 - boxWidth*1.2/2, 
+    height - boxHeight - 20, 
+    boxWidth*1.2, 
+    boxHeight, 
+    `${ldlTarget}\\\\\n${treatmentRecommendation}`,
+    true
+  );
+  
+  // Draw arrow to treatment recommendation
+  if (isVeryHighRisk) {
+    drawArrow(ctx, 3*width/4, 290, width/2, height - boxHeight - 20, '', true);
+  } else if (isHighRisk) {
+    drawArrow(ctx, width/2, 290, width/2, height - boxHeight - 20, '', true);
+  } else {
+    drawArrow(ctx, width/4, 370, width/2, height - boxHeight - 20, '', true);
+  }
+}
+
+function getRiskColor(risk: number): string {
+  if (risk < 3) return '#dcfce7'; // Low risk - green
+  if (risk < 15) return '#fef9c3'; // Moderate risk - yellow
+  if (risk < 30) return '#fee2e2'; // High risk - light red
+  return '#fecaca'; // Very high risk - red
 }
 
 function drawGenericAlgorithm(
