@@ -288,7 +288,7 @@ export const cha2ds2vascCalculator: CalculatorDefinition = {
   ],
 };
 
-// FIB-4 Calculator Definition
+// FIB-4 Calculator Definition - UPDATED with correct formula
 export const fib4Calculator: CalculatorDefinition = {
   id: 'fib-4',
   name: 'FIB-4 Index',
@@ -502,102 +502,302 @@ export const das28Calculator: CalculatorDefinition = {
   ],
 };
 
+// Framingham Risk Score Calculator Definition
+export const framinghamRiskCalculator: CalculatorDefinition = {
+  id: 'framingham-risk',
+  name: 'Framingham Risk Score',
+  description: 'Estimates 10-year cardiovascular risk based on multiple risk factors',
+  category: 'Cardiology',
+  parameters: [
+    {
+      id: 'age',
+      name: 'Age',
+      type: 'number',
+      unit: 'years',
+      tooltip: 'Patient\'s age in years (30-79)',
+      storable: true,
+    },
+    {
+      id: 'gender',
+      name: 'Gender',
+      type: 'select',
+      options: [
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
+      ],
+      tooltip: 'Patient\'s gender',
+      storable: true,
+    },
+    {
+      id: 'totalCholesterol',
+      name: 'Total Cholesterol',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'Total cholesterol level',
+      storable: true,
+    },
+    {
+      id: 'hdlCholesterol',
+      name: 'HDL Cholesterol',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'HDL cholesterol level',
+      storable: true,
+    },
+    {
+      id: 'systolicBP',
+      name: 'Systolic Blood Pressure',
+      type: 'number',
+      unit: 'mmHg',
+      tooltip: 'Systolic blood pressure',
+      storable: true,
+    },
+    {
+      id: 'onHypertensionTreatment',
+      name: 'On Hypertension Treatment',
+      type: 'boolean',
+      tooltip: 'Is the patient currently on medication for hypertension?',
+      storable: true,
+    },
+    {
+      id: 'smoker',
+      name: 'Current Smoker',
+      type: 'boolean',
+      tooltip: 'Does the patient currently smoke cigarettes?',
+      storable: true,
+    },
+  ],
+  screeningQuestions: [
+    {
+      id: 'ageRange',
+      question: 'Is the patient between 30 and 79 years old?',
+      type: 'boolean',
+      eliminates: true,
+      eliminationMessage: 'This calculator is validated for patients aged 30-79 years.',
+    },
+    {
+      id: 'priorCVD',
+      question: 'Does the patient have prior cardiovascular disease?',
+      type: 'boolean',
+      eliminates: true,
+      eliminationMessage: 'This calculator is intended for primary prevention. Patients with established cardiovascular disease are automatically considered high risk.',
+    },
+  ],
+  calculate: (params) => {
+    // Get age points based on gender and age
+    let points = 0;
+    const age = params.age;
+    const gender = params.gender;
+    
+    // Age points for men
+    if (gender === 'male') {
+      if (age >= 30 && age <= 34) points += 0;
+      else if (age >= 35 && age <= 39) points += 2;
+      else if (age >= 40 && age <= 44) points += 5;
+      else if (age >= 45 && age <= 49) points += 6;
+      else if (age >= 50 && age <= 54) points += 8;
+      else if (age >= 55 && age <= 59) points += 10;
+      else if (age >= 60 && age <= 64) points += 11;
+      else if (age >= 65 && age <= 69) points += 12;
+      else if (age >= 70 && age <= 74) points += 14;
+      else if (age >= 75) points += 15;
+    } 
+    // Age points for women
+    else {
+      if (age >= 30 && age <= 34) points += 0;
+      else if (age >= 35 && age <= 39) points += 2;
+      else if (age >= 40 && age <= 44) points += 4;
+      else if (age >= 45 && age <= 49) points += 5;
+      else if (age >= 50 && age <= 54) points += 7;
+      else if (age >= 55 && age <= 59) points += 8;
+      else if (age >= 60 && age <= 64) points += 9;
+      else if (age >= 65 && age <= 69) points += 10;
+      else if (age >= 70 && age <= 74) points += 11;
+      else if (age >= 75) points += 12;
+    }
+    
+    // Total cholesterol points based on gender
+    const tc = params.totalCholesterol;
+    if (gender === 'male') {
+      if (tc < 4.10) points += 0;
+      else if (tc >= 4.10 && tc <= 5.19) points += 1;
+      else if (tc >= 5.20 && tc <= 6.19) points += 2;
+      else if (tc >= 6.20 && tc <= 7.20) points += 3;
+      else if (tc > 7.20) points += 4;
+    } else {
+      if (tc < 4.10) points += 0;
+      else if (tc >= 4.10 && tc <= 5.19) points += 1;
+      else if (tc >= 5.20 && tc <= 6.19) points += 3;
+      else if (tc >= 6.20 && tc <= 7.20) points += 4;
+      else if (tc > 7.20) points += 5;
+    }
+    
+    // HDL cholesterol points
+    const hdl = params.hdlCholesterol;
+    if (hdl >= 1.50) points += -2;
+    else if (hdl >= 1.30 && hdl <= 1.49) points += -1;
+    else if (hdl >= 1.20 && hdl <= 1.29) points += 0;
+    else if (hdl >= 0.90 && hdl <= 1.19) points += 1;
+    else if (hdl < 0.90) points += 2;
+    
+    // Systolic BP points based on treatment status
+    const sbp = params.systolicBP;
+    const treated = params.onHypertensionTreatment;
+    
+    if (gender === 'male') {
+      if (!treated) {
+        if (sbp < 120) points += -2;
+        else if (sbp >= 120 && sbp <= 129) points += 0;
+        else if (sbp >= 130 && sbp <= 139) points += 1;
+        else if (sbp >= 140 && sbp <= 159) points += 2;
+        else if (sbp >= 160) points += 3;
+      } else {
+        if (sbp < 120) points += 0;
+        else if (sbp >= 120 && sbp <= 129) points += 2;
+        else if (sbp >= 130 && sbp <= 139) points += 3;
+        else if (sbp >= 140 && sbp <= 159) points += 4;
+        else if (sbp >= 160) points += 5;
+      }
+    } else {
+      if (!treated) {
+        if (sbp < 120) points += -3;
+        else if (sbp >= 120 && sbp <= 129) points += 0;
+        else if (sbp >= 130 && sbp <= 139) points += 1;
+        else if (sbp >= 140 && sbp <= 149) points += 2;
+        else if (sbp >= 150 && sbp <= 159) points += 4;
+        else if (sbp >= 160) points += 5;
+      } else {
+        if (sbp < 120) points += -1;
+        else if (sbp >= 120 && sbp <= 129) points += 2;
+        else if (sbp >= 130 && sbp <= 139) points += 3;
+        else if (sbp >= 140 && sbp <= 149) points += 5;
+        else if (sbp >= 150 && sbp <= 159) points += 6;
+        else if (sbp >= 160) points += 7;
+      }
+    }
+    
+    // Smoking points
+    if (params.smoker) {
+      if (gender === 'male') points += 4;
+      else points += 3;
+    }
+    
+    // Calculate 10-year risk based on points and gender
+    let risk = 0;
+    if (gender === 'male') {
+      if (points <= -3) risk = 1;
+      else if (points === -2) risk = 1.1;
+      else if (points === -1) risk = 1.4;
+      else if (points === 0) risk = 1.6;
+      else if (points === 1) risk = 1.9;
+      else if (points === 2) risk = 2.3;
+      else if (points === 3) risk = 2.8;
+      else if (points === 4) risk = 3.3;
+      else if (points === 5) risk = 3.9;
+      else if (points === 6) risk = 4.7;
+      else if (points === 7) risk = 5.6;
+      else if (points === 8) risk = 6.7;
+      else if (points === 9) risk = 7.9;
+      else if (points === 10) risk = 9.4;
+      else if (points === 11) risk = 11.2;
+      else if (points === 12) risk = 13.2;
+      else if (points === 13) risk = 15.6;
+      else if (points === 14) risk = 18.4;
+      else if (points === 15) risk = 21.6;
+      else if (points === 16) risk = 25.3;
+      else if (points === 17) risk = 29.4;
+      else if (points >= 18) risk = 30;
+    } else {
+      if (points <= -2) risk = 1;
+      else if (points === -1) risk = 1.0;
+      else if (points === 0) risk = 1.1;
+      else if (points === 1) risk = 1.5;
+      else if (points === 2) risk = 1.8;
+      else if (points === 3) risk = 2.1;
+      else if (points === 4) risk = 2.5;
+      else if (points === 5) risk = 2.9;
+      else if (points === 6) risk = 3.4;
+      else if (points === 7) risk = 3.9;
+      else if (points === 8) risk = 4.6;
+      else if (points === 9) risk = 5.4;
+      else if (points === 10) risk = 6.3;
+      else if (points === 11) risk = 7.4;
+      else if (points === 12) risk = 8.6;
+      else if (points === 13) risk = 10.0;
+      else if (points === 14) risk = 11.6;
+      else if (points === 15) risk = 13.5;
+      else if (points === 16) risk = 15.6;
+      else if (points === 17) risk = 18.1;
+      else if (points === 18) risk = 20.9;
+      else if (points === 19) risk = 24.0;
+      else if (points >= 20) risk = 27.5;
+    }
+    
+    // Determine ESC/EAS risk category based on risk percentage
+    let interpretation = '';
+    let severity: 'low' | 'moderate' | 'high' | 'very-high' = 'low';
+    
+    if (risk < 1) {
+      interpretation = 'Low cardiovascular risk (<1% 10-year risk)';
+      severity = 'low';
+    } else if (risk < 5) {
+      interpretation = 'Low cardiovascular risk (<5% 10-year risk)';
+      severity = 'low';
+    } else if (risk < 10) {
+      interpretation = 'Moderate cardiovascular risk (5-10% 10-year risk)';
+      severity = 'moderate';
+    } else if (risk < 20) {
+      interpretation = 'High cardiovascular risk (10-20% 10-year risk)';
+      severity = 'high';
+    } else {
+      interpretation = 'Very high cardiovascular risk (≥20% 10-year risk)';
+      severity = 'very-high';
+    }
+    
+    // Determine LDL target based on risk category
+    let ldlTarget = '';
+    if (severity === 'low') {
+      ldlTarget = 'LDL target: <3.0 mmol/L';
+    } else if (severity === 'moderate') {
+      ldlTarget = 'LDL target: <2.6 mmol/L';
+    } else if (severity === 'high') {
+      ldlTarget = 'LDL target: <1.8 mmol/L or ≥50% reduction';
+    } else if (severity === 'very-high') {
+      ldlTarget = 'LDL target: <1.4 mmol/L or ≥50% reduction';
+    }
+    
+    interpretation += '. ' + ldlTarget;
+    
+    return {
+      score: risk,
+      interpretation,
+      severity,
+    };
+  },
+  interpretations: {
+    ranges: [
+      { min: 0, max: 1, interpretation: 'Low cardiovascular risk (<1% 10-year risk)', severity: 'low' },
+      { min: 1, max: 4.9, interpretation: 'Low cardiovascular risk (<5% 10-year risk)', severity: 'low' },
+      { min: 5, max: 9.9, interpretation: 'Moderate cardiovascular risk (5-10% 10-year risk)', severity: 'moderate' },
+      { min: 10, max: 19.9, interpretation: 'High cardiovascular risk (10-20% 10-year risk)', severity: 'high' },
+      { min: 20, max: 100, interpretation: 'Very high cardiovascular risk (≥20% 10-year risk)', severity: 'very-high' },
+    ],
+    notes: 'The Framingham Risk Score estimates 10-year risk of cardiovascular disease based on age, gender, total cholesterol, HDL cholesterol, smoking status, and blood pressure. Risk categories are based on ESC/EAS guidelines.',
+  },
+  references: [
+    'D\'Agostino RB Sr, Vasan RS, Pencina MJ, et al. General cardiovascular risk profile for use in primary care: the Framingham Heart Study. Circulation. 2008;117(6):743-753.',
+    'Mach F, Baigent C, Catapano AL, et al. 2019 ESC/EAS Guidelines for the management of dyslipidaemias: lipid modification to reduce cardiovascular risk. Eur Heart J. 2020;41(1):111-188.',
+  ],
+};
+
 // CV Risk Assessment Calculator Definition
 export const cvRiskCalculator: CalculatorDefinition = {
   id: 'cv-risk',
-  name: 'CV Risk Assessment',
-  description: 'Determines if a patient requires Framingham risk scoring based on risk factors',
+  name: 'Cardiovascular Risk Assessment',
+  description: 'Evaluates cardiovascular risk categories and determines if Framingham risk scoring is needed',
   category: 'Cardiology',
   parameters: [
-    // Very High Risk Factors
-    {
-      id: 'establishedAtherosclerosis',
-      name: 'Established atherosclerotic disease',
-      type: 'boolean',
-      tooltip: 'Presence of established atherosclerotic disease',
-      storable: false,
-    },
-    {
-      id: 'coronaryArteryDisease',
-      name: 'Coronary artery disease',
-      type: 'boolean',
-      tooltip: 'Presence of coronary artery disease',
-      storable: false,
-    },
-    {
-      id: 'cerebrovascularDisease',
-      name: 'Cerebrovascular disease',
-      type: 'boolean',
-      tooltip: 'Presence of cerebrovascular disease',
-      storable: false,
-    },
-    {
-      id: 'peripheralArterialDisease',
-      name: 'Peripheral arterial disease',
-      type: 'boolean',
-      tooltip: 'Presence of peripheral arterial disease',
-      storable: false,
-    },
-    {
-      id: 'type2DiabetesWithRiskFactors',
-      name: 'Type 2 diabetes with risk factors or age >40',
-      type: 'boolean',
-      tooltip: 'Type 2 diabetes plus one or more other risk factors (smoking, hypertension, dyslipidaemia) or age >40 years',
-      storable: false,
-    },
-    {
-      id: 'type1DiabetesWithAlbuminuria',
-      name: 'Type 1 diabetes with albuminuria',
-      type: 'boolean',
-      tooltip: 'Type 1 diabetes with micro-albuminuria or proteinuria',
-      storable: false,
-    },
-    {
-      id: 'geneticDyslipidemia',
-      name: 'Genetic dyslipidemia',
-      type: 'boolean',
-      tooltip: 'Genetic dyslipidaemia, e.g. FH, dysbetalipoproteinaemia, individuals with TC >7.5 mmol/L and/or LDL-C >5 mmol/L',
-      storable: false,
-    },
-    {
-      id: 'severeCKD',
-      name: 'Severe CKD (GFR <30 mL/min/1.73 m²)',
-      type: 'boolean',
-      tooltip: 'Severe chronic kidney disease with GFR <30 mL/min/1.73 m²',
-      storable: false,
-    },
-    {
-      id: 'arterialPlaque',
-      name: 'Arterial plaque on imaging',
-      type: 'boolean',
-      tooltip: 'Asymptomatic individuals with arterial plaque demonstrated on imaging modalities',
-      storable: false,
-    },
-    
-    // High Risk Factors
-    {
-      id: 'elevatedBP',
-      name: 'Markedly elevated BP',
-      type: 'boolean',
-      tooltip: 'Systolic BP ≥180 mmHg and/or diastolic BP ≥110 mmHg',
-      storable: false,
-    },
-    {
-      id: 'uncomplicatedDiabetes',
-      name: 'Uncomplicated diabetes <40 years',
-      type: 'boolean',
-      tooltip: 'Uncomplicated type 1 diabetes and type 2 diabetes aged <40 years without other risk factors',
-      storable: false,
-    },
-    {
-      id: 'moderateCKD',
-      name: 'Moderate CKD (GFR 30-59 mL/min/1.73 m²)',
-      type: 'boolean',
-      tooltip: 'Chronic kidney disease with GFR 30-59 mL/min/1.73 m²',
-      storable: false,
-    },
-    
-    // Additional patient information
+    // Required parameters
     {
       id: 'age',
       name: 'Age',
@@ -617,58 +817,285 @@ export const cvRiskCalculator: CalculatorDefinition = {
       tooltip: 'Patient\'s gender',
       storable: true,
     },
+    {
+      id: 'smoking',
+      name: 'Smoking',
+      type: 'boolean',
+      tooltip: 'Current smoker',
+      storable: true,
+    },
+    {
+      id: 'onHPTRx',
+      name: 'On Hypertension Treatment',
+      type: 'boolean',
+      tooltip: 'Patient is currently on medication for hypertension',
+      storable: true,
+    },
+    {
+      id: 'untreatedTC',
+      name: 'Untreated Total Cholesterol',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'Total cholesterol level without lipid-lowering therapy',
+      storable: true,
+    },
+    {
+      id: 'untreatedHDL',
+      name: 'Untreated HDL',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'HDL cholesterol level without lipid-lowering therapy',
+      storable: true,
+    },
+    {
+      id: 'untreatedLDL',
+      name: 'Untreated LDL',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'LDL cholesterol level without lipid-lowering therapy',
+      storable: true,
+    },
+    {
+      id: 'untreatedSBP',
+      name: 'Untreated Systolic BP',
+      type: 'number',
+      unit: 'mmHg',
+      tooltip: 'Systolic blood pressure without antihypertensive therapy',
+      storable: true,
+    },
+    
+    // Additional information - recommended
+    {
+      id: 'knownDLP',
+      name: 'Known Dyslipidemia',
+      type: 'boolean',
+      tooltip: 'Patient has been diagnosed with dyslipidemia',
+      storable: true,
+    },
+    {
+      id: 'onStatin',
+      name: 'On Statin Therapy',
+      type: 'boolean',
+      tooltip: 'Patient is currently taking statin medication',
+      storable: true,
+    },
+    {
+      id: 'apoB',
+      name: 'ApoB',
+      type: 'number',
+      unit: 'g/L',
+      tooltip: 'Apolipoprotein B level',
+      storable: true,
+    },
+    {
+      id: 'tcOver7_5',
+      name: 'TC ≥ 7.5',
+      type: 'boolean',
+      tooltip: 'Total cholesterol level is 7.5 mmol/L or higher',
+      storable: false,
+    },
+    {
+      id: 'currentLDL',
+      name: 'Current LDL',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'Current LDL cholesterol level (with or without treatment)',
+      storable: true,
+    },
+    {
+      id: 'ldlOver5_0',
+      name: 'LDL ≥ 5.0',
+      type: 'boolean',
+      tooltip: 'LDL cholesterol level is 5.0 mmol/L or higher',
+      storable: false,
+    },
+    {
+      id: 'currentNonHDL',
+      name: 'Current Non-HDL',
+      type: 'number',
+      unit: 'mmol/L',
+      tooltip: 'Current non-HDL cholesterol level (Total Cholesterol minus HDL)',
+      storable: true,
+    },
+    
+    // Comorbidities
+    {
+      id: 'knownHPT',
+      name: 'Known Hypertension',
+      type: 'boolean',
+      tooltip: 'Patient has been diagnosed with hypertension',
+      storable: true,
+    },
+    {
+      id: 'dm2',
+      name: 'Type 2 Diabetes',
+      type: 'boolean',
+      tooltip: 'Patient has Type 2 Diabetes Mellitus',
+      storable: true,
+    },
+    {
+      id: 'dm1',
+      name: 'Type 1 Diabetes',
+      type: 'boolean',
+      tooltip: 'Patient has Type 1 Diabetes Mellitus',
+      storable: true,
+    },
+    {
+      id: 'ckd',
+      name: 'Chronic Kidney Disease',
+      type: 'boolean',
+      tooltip: 'Patient has Chronic Kidney Disease',
+      storable: true,
+    },
+    {
+      id: 'sbpOver180',
+      name: 'SBP ≥ 180',
+      type: 'boolean',
+      tooltip: 'Systolic blood pressure is 180 mmHg or higher',
+      storable: false,
+    },
+    {
+      id: 'dbpOver110',
+      name: 'DBP ≥ 110',
+      type: 'boolean',
+      tooltip: 'Diastolic blood pressure is 110 mmHg or higher',
+      storable: false,
+    },
+    {
+      id: 'albuminuria',
+      name: 'Albuminuria',
+      type: 'boolean',
+      tooltip: 'Presence of albumin in the urine',
+      storable: true,
+    },
+    {
+      id: 'egfr',
+      name: 'eGFR',
+      type: 'number',
+      unit: 'mL/min/1.73m²',
+      tooltip: 'Estimated glomerular filtration rate',
+      storable: true,
+    },
+    
+    // Complication History
+    {
+      id: 'cad',
+      name: 'Coronary Artery Disease',
+      type: 'boolean',
+      tooltip: 'History of coronary artery disease',
+      storable: true,
+    },
+    {
+      id: 'cerebroVD',
+      name: 'Cerebrovascular Disease',
+      type: 'boolean',
+      tooltip: 'History of cerebrovascular disease',
+      storable: true,
+    },
+    {
+      id: 'pad',
+      name: 'Peripheral Arterial Disease',
+      type: 'boolean',
+      tooltip: 'History of peripheral arterial disease',
+      storable: true,
+    },
+    {
+      id: 'ami',
+      name: 'Acute Myocardial Infarction',
+      type: 'boolean',
+      tooltip: 'History of acute myocardial infarction',
+      storable: true,
+    },
+    
+    // Asymptomatic atheroma
+    {
+      id: 'coronaryAtheroma',
+      name: 'Coronary Atheroma',
+      type: 'boolean',
+      tooltip: 'Presence of asymptomatic coronary atheroma on imaging',
+      storable: true,
+    },
+    {
+      id: 'carotidAtheroma',
+      name: 'Carotid Atheroma',
+      type: 'boolean',
+      tooltip: 'Presence of asymptomatic carotid atheroma on imaging',
+      storable: true,
+    },
+    {
+      id: 'lowerLimbAtheroma',
+      name: 'Lower Limb Atheroma',
+      type: 'boolean',
+      tooltip: 'Presence of asymptomatic lower limb atheroma on imaging',
+      storable: true,
+    },
   ],
   screeningQuestions: [
     {
-      id: 'cardiovascularRiskAssessment',
-      question: 'Is this patient being assessed for cardiovascular risk?',
+      id: 'cvRiskAssessment',
+      question: 'Is this patient being evaluated for cardiovascular risk?',
       type: 'boolean',
       eliminates: false,
     },
   ],
   calculate: (params) => {
-    // Check for Very High Risk factors
-    const veryHighRiskFactors = [
-      params.establishedAtherosclerosis,
-      params.coronaryArteryDisease,
-      params.cerebrovascularDisease,
-      params.peripheralArterialDisease,
-      params.type2DiabetesWithRiskFactors,
-      params.type1DiabetesWithAlbuminuria,
-      params.geneticDyslipidemia,
-      params.severeCKD,
-      params.arterialPlaque
-    ];
+    // Check for Very High Risk criteria
+    const hasEstablishedAtherosclerosis = params.cad || params.cerebroVD || params.pad;
     
-    const hasVeryHighRiskFactor = veryHighRiskFactors.some(factor => factor === true);
+    const hasType2DiabetesWithRiskFactors = params.dm2 && 
+      (params.smoking || params.knownHPT || params.knownDLP || params.age > 40);
     
-    // Check for High Risk factors
-    const highRiskFactors = [
-      params.elevatedBP,
-      params.uncomplicatedDiabetes,
-      params.moderateCKD
-    ];
+    const hasType1DiabetesWithAlbuminuria = params.dm1 && params.albuminuria;
     
-    const hasHighRiskFactor = highRiskFactors.some(factor => factor === true);
+    const hasGeneticDyslipidemia = params.tcOver7_5 || params.ldlOver5_0;
     
-    // Determine risk category and need for Framingham scoring
+    const hasSevereCKD = params.egfr !== undefined && params.egfr < 30;
+    
+    const hasAsymptomaticAtheroma = params.coronaryAtheroma || 
+      params.carotidAtheroma || params.lowerLimbAtheroma;
+    
+    const isVeryHighRisk = hasEstablishedAtherosclerosis || 
+      hasType2DiabetesWithRiskFactors || 
+      hasType1DiabetesWithAlbuminuria || 
+      hasGeneticDyslipidemia || 
+      hasSevereCKD || 
+      hasAsymptomaticAtheroma;
+    
+    // Check for High Risk criteria
+    const hasMarkedlyElevatedBP = params.sbpOver180 || params.dbpOver110;
+    
+    const hasUncomplicatedDiabetes = (params.dm1 || (params.dm2 && params.age < 40)) && 
+      !(params.smoking || params.knownHPT || params.knownDLP);
+    
+    const hasModerateKidneyDisease = params.egfr !== undefined && 
+      params.egfr >= 30 && params.egfr < 60;
+    
+    const isHighRisk = hasMarkedlyElevatedBP || hasUncomplicatedDiabetes || hasModerateKidneyDisease;
+    
+    // Determine if Framingham risk scoring is needed
+    const needsFramingham = !isVeryHighRisk && !isHighRisk;
+    
+    // Determine risk category and interpretation
+    let riskCategory = '';
     let interpretation = '';
     let severity: 'low' | 'moderate' | 'high' | 'very-high' = 'low';
-    let score = 0;
     
-    if (hasVeryHighRiskFactor) {
-      interpretation = 'Very High Risk - Framingham risk scoring NOT required';
+    if (isVeryHighRisk) {
+      riskCategory = 'Very High Risk';
+      interpretation = 'Patient meets criteria for Very High cardiovascular risk. Framingham risk scoring is not required.';
       severity = 'very-high';
-      score = 3; // Using score to represent risk level (3 = very high)
-    } else if (hasHighRiskFactor) {
-      interpretation = 'High Risk - Framingham risk scoring NOT required';
+    } else if (isHighRisk) {
+      riskCategory = 'High Risk';
+      interpretation = 'Patient meets criteria for High cardiovascular risk. Framingham risk scoring is not required.';
       severity = 'high';
-      score = 2; // Using score to represent risk level (2 = high)
     } else {
-      interpretation = 'Framingham risk scoring IS required to determine cardiovascular risk';
+      riskCategory = 'Requires Framingham Scoring';
+      interpretation = 'Patient does not meet criteria for automatic High or Very High risk classification. Framingham risk scoring is recommended.';
       severity = 'moderate';
-      score = 1; // Using score to represent risk level (1 = needs Framingham)
     }
+    
+    // Return a score of 0-2 representing risk category (0=needs Framingham, 1=High, 2=Very High)
+    const score = isVeryHighRisk ? 2 : (isHighRisk ? 1 : 0);
     
     return {
       score,
@@ -678,15 +1105,16 @@ export const cvRiskCalculator: CalculatorDefinition = {
   },
   interpretations: {
     ranges: [
-      { min: 1, max: 1, interpretation: 'Framingham risk scoring IS required to determine cardiovascular risk', severity: 'moderate' },
-      { min: 2, max: 2, interpretation: 'High Risk - Framingham risk scoring NOT required', severity: 'high' },
-      { min: 3, max: 3, interpretation: 'Very High Risk - Framingham risk scoring NOT required', severity: 'very-high' },
+      { min: 0, max: 0, interpretation: 'Requires Framingham risk scoring to determine cardiovascular risk', severity: 'moderate' },
+      { min: 1, max: 1, interpretation: 'High cardiovascular risk - Framingham risk scoring not required', severity: 'high' },
+      { min: 2, max: 2, interpretation: 'Very High cardiovascular risk - Framingham risk scoring not required', severity: 'very-high' },
     ],
-    notes: 'This assessment determines whether a patient requires Framingham risk scoring based on the presence of specific risk factors. Patients with very high or high risk factors do not require Framingham risk scoring.',
+    notes: 'This assessment determines whether a patient falls into automatic High or Very High cardiovascular risk categories based on clinical criteria. If the patient does not meet these criteria, Framingham risk scoring is recommended for further risk stratification.',
   },
   references: [
     'South African Dyslipidaemia Guideline Consensus Statement: 2018 Update',
     'European Society of Cardiology (ESC) and European Atherosclerosis Society (EAS) Guidelines for the management of dyslipidaemias',
+    'American College of Cardiology/American Heart Association Guideline on the Assessment of Cardiovascular Risk',
   ],
 };
 
@@ -697,6 +1125,7 @@ export const calculators: CalculatorDefinition[] = [
   fib4Calculator,
   das28Calculator,
   cvRiskCalculator,
+  framinghamRiskCalculator,
   // Add more calculators here as they are implemented
 ];
 

@@ -45,6 +45,9 @@ export function AlgorithmDiagram({ calculatorId, result, inputs }: AlgorithmDiag
       case 'das28':
         drawDas28Algorithm(ctx, result, inputs);
         break;
+      case 'framingham-risk':
+        drawFraminghamAlgorithm(ctx, result, inputs);
+        break;
       case 'cv-risk':
         drawCVRiskAlgorithm(ctx, result, inputs);
         break;
@@ -570,6 +573,119 @@ function drawDas28Algorithm(
   drawArrow(ctx, width/2 + 60, 150, 4*width/5, 200, '>5.1', isHighActivity);
 }
 
+function drawFraminghamAlgorithm(
+  ctx: CanvasRenderingContext2D, 
+  result: CalculationResult, 
+  inputs: Record<string, any>
+) {
+  const width = ctx.canvas.width / window.devicePixelRatio;
+  const height = ctx.canvas.height / window.devicePixelRatio;
+  const boxWidth = 140;
+  const boxHeight = 50;
+  
+  // Draw title box
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'Framingham Risk Score');
+  
+  // Draw inputs summary box
+  const gender = inputs.gender === 'male' ? 'Male' : 'Female';
+  const age = inputs.age;
+  const tc = inputs.totalCholesterol;
+  const hdl = inputs.hdlCholesterol;
+  const sbp = inputs.systolicBP;
+  const treated = inputs.onHypertensionTreatment ? 'Yes' : 'No';
+  const smoker = inputs.smoker ? 'Yes' : 'No';
+  
+  drawBox(
+    ctx, 
+    width/4 - boxWidth/2, 
+    100, 
+    boxWidth, 
+    boxHeight*1.5, 
+    `Inputs:\\\\nAge: ${age}, ${gender}\\\\nTC: ${tc}, HDL: ${hdl}\\\\nSBP: ${sbp}, Treated: ${treated}\\\\nSmoker: ${smoker}`,
+    false,
+    '#e2e8f0'
+  );
+  
+  // Draw arrow from title to inputs
+  drawArrow(ctx, width/2 - boxWidth/4, 70, width/4, 100, '', false);
+  
+  // Draw score box
+  const risk = result.score;
+  drawBox(
+    ctx, 
+    3*width/4 - boxWidth/2, 
+    100, 
+    boxWidth, 
+    boxHeight, 
+    `10-Year Risk: ${risk}%`,
+    true,
+    '#e2e8f0'
+  );
+  
+  // Draw arrow from title to score
+  drawArrow(ctx, width/2 + boxWidth/4, 70, 3*width/4, 100, '', true);
+  
+  // Draw risk categories
+  const isLowRisk = risk < 5;
+  const isModerateRisk = risk >= 5 && risk < 10;
+  const isHighRisk = risk >= 10 && risk < 20;
+  const isVeryHighRisk = risk >= 20;
+  
+  // Draw low risk box
+  drawBox(
+    ctx, 
+    width/5 - boxWidth/2, 
+    220, 
+    boxWidth, 
+    boxHeight, 
+    'Low Risk\\\\n(<5%)',
+    isLowRisk,
+    isLowRisk ? '#dcfce7' : '#e2e8f0'
+  );
+  
+  // Draw moderate risk box
+  drawBox(
+    ctx, 
+    2*width/5 - boxWidth/2, 
+    220, 
+    boxWidth, 
+    boxHeight, 
+    'Moderate Risk\\\\n(5-10%)',
+    isModerateRisk,
+    isModerateRisk ? '#fef9c3' : '#e2e8f0'
+  );
+  
+  // Draw high risk box
+  drawBox(
+    ctx, 
+    3*width/5 - boxWidth/2, 
+    220, 
+    boxWidth, 
+    boxHeight, 
+    'High Risk\\\\n(10-20%)',
+    isHighRisk,
+    isHighRisk ? '#fee2e2' : '#e2e8f0'
+  );
+  
+  // Draw very high risk box
+  drawBox(
+    ctx, 
+    4*width/5 - boxWidth/2, 
+    220, 
+    boxWidth, 
+    boxHeight, 
+    'Very High Risk\\\\n(≥20%)',
+    isVeryHighRisk,
+    isVeryHighRisk ? '#fecaca' : '#e2e8f0'
+  );
+  
+  // Draw arrows from score to risk categories
+  drawArrow(ctx, 3*width/4, 150, width/5, 220, '<5%', isLowRisk);
+  drawArrow(ctx, 3*width/4, 150, 2*width/5, 220, '5-10%', isModerateRisk);
+  drawArrow(ctx, 3*width/4, 150, 3*width/5, 220, '10-20%', isHighRisk);
+  drawArrow(ctx, 3*width/4, 150, 4*width/5, 220, '≥20%', isVeryHighRisk);
+}
+
 function drawCVRiskAlgorithm(
   ctx: CanvasRenderingContext2D, 
   result: CalculationResult, 
@@ -577,143 +693,108 @@ function drawCVRiskAlgorithm(
 ) {
   const width = ctx.canvas.width / window.devicePixelRatio;
   const height = ctx.canvas.height / window.devicePixelRatio;
-  const boxWidth = 160;
-  const boxHeight = 60;
+  const boxWidth = 140;
+  const boxHeight = 50;
   
-  // Draw start box
+  // Draw title box
   drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CV Risk Assessment');
   
-  // Draw arrow from start
-  drawArrow(ctx, width/2, 80, width/2, 120, '', true);
+  // Draw risk factors box
+  let riskFactors = [];
+  if (inputs.cad) riskFactors.push('CAD');
+  if (inputs.cerebroVD) riskFactors.push('Cerebrovascular Disease');
+  if (inputs.pad) riskFactors.push('PAD');
+  if (inputs.dm2 && (inputs.smoking || inputs.knownHPT || inputs.knownDLP || inputs.age > 40)) 
+    riskFactors.push('T2DM with risk factors');
+  if (inputs.dm1 && inputs.albuminuria) 
+    riskFactors.push('T1DM with albuminuria');
+  if (inputs.tcOver7_5 || inputs.ldlOver5_0) 
+    riskFactors.push('Genetic dyslipidemia');
+  if (inputs.egfr !== undefined && inputs.egfr < 30) 
+    riskFactors.push('Severe CKD');
+  if (inputs.coronaryAtheroma || inputs.carotidAtheroma || inputs.lowerLimbAtheroma) 
+    riskFactors.push('Asymptomatic atheroma');
   
-  // Check for Very High Risk factors
-  const veryHighRiskFactors = [
-    inputs.establishedAtherosclerosis,
-    inputs.coronaryArteryDisease,
-    inputs.cerebrovascularDisease,
-    inputs.peripheralArterialDisease,
-    inputs.type2DiabetesWithRiskFactors,
-    inputs.type1DiabetesWithAlbuminuria,
-    inputs.geneticDyslipidemia,
-    inputs.severeCKD,
-    inputs.arterialPlaque
-  ];
+  // Draw decision tree
+  drawBox(ctx, width/2 - boxWidth/2, 100, boxWidth, boxHeight, 'Risk Assessment');
   
-  const hasVeryHighRiskFactor = veryHighRiskFactors.some(factor => factor === true);
+  // Draw arrow from title to decision
+  drawArrow(ctx, width/2, 70, width/2, 100, '', true);
   
-  // Check for High Risk factors
-  const highRiskFactors = [
-    inputs.elevatedBP,
-    inputs.uncomplicatedDiabetes,
-    inputs.moderateCKD
-  ];
+  // Draw risk category boxes
+  const needsFramingham = result.score === 0;
+  const isHighRisk = result.score === 1;
+  const isVeryHighRisk = result.score === 2;
   
-  const hasHighRiskFactor = highRiskFactors.some(factor => factor === true);
+  // Draw Framingham needed box
+  drawBox(
+    ctx, 
+    width/4 - boxWidth/2, 
+    200, 
+    boxWidth, 
+    boxHeight, 
+    'Needs Framingham\\\\nScoring',
+    needsFramingham,
+    needsFramingham ? '#e2e8f0' : '#e2e8f0'
+  );
   
-  // Decision tree
-  if (hasVeryHighRiskFactor) {
-    // Very High Risk path
-    drawBox(
-      ctx, 
-      width/2 - boxWidth/2, 
-      120, 
-      boxWidth, 
-      boxHeight, 
-      'Very High Risk Factor\\\\nPresent?',
-      true,
-      '#e2e8f0'
-    );
-    
-    drawArrow(ctx, width/2 + boxWidth/2, 150, width/2 + boxWidth/2 + 40, 150, '', true);
-    drawArrow(ctx, width/2 + boxWidth/2 + 40, 150, width/2 + boxWidth/2 + 40, 220, '', true);
-    
-    drawBox(
-      ctx, 
-      width/2 + boxWidth/2 - 20, 
-      220, 
-      boxWidth, 
-      boxHeight, 
-      'Very High Risk\\\\nFramingham NOT Required',
-      true,
-      '#fee2e2'
-    );
-  } else if (hasHighRiskFactor) {
-    // High Risk path
-    drawBox(
-      ctx, 
-      width/2 - boxWidth/2, 
-      120, 
-      boxWidth, 
-      boxHeight, 
-      'Very High Risk Factor\\\\nPresent?',
-      true,
-      '#e2e8f0'
-    );
-    
-    drawArrow(ctx, width/2, 180, width/2, 220, 'No', true);
-    
-    drawBox(
-      ctx, 
-      width/2 - boxWidth/2, 
-      220, 
-      boxWidth, 
-      boxHeight, 
-      'High Risk Factor\\\\nPresent?',
-      true,
-      '#e2e8f0'
-    );
-    
-    drawArrow(ctx, width/2 + boxWidth/2, 250, width/2 + boxWidth/2 + 40, 250, '', true);
-    drawArrow(ctx, width/2 + boxWidth/2 + 40, 250, width/2 + boxWidth/2 + 40, 320, '', true);
-    
-    drawBox(
-      ctx, 
-      width/2 + boxWidth/2 - 20, 
-      320, 
-      boxWidth, 
-      boxHeight, 
-      'High Risk\\\\nFramingham NOT Required',
-      true,
-      '#fef9c3'
-    );
-  } else {
-    // Needs Framingham path
-    drawBox(
-      ctx, 
-      width/2 - boxWidth/2, 
-      120, 
-      boxWidth, 
-      boxHeight, 
-      'Very High Risk Factor\\\\nPresent?',
-      true,
-      '#e2e8f0'
-    );
-    
-    drawArrow(ctx, width/2, 180, width/2, 220, 'No', true);
-    
-    drawBox(
-      ctx, 
-      width/2 - boxWidth/2, 
-      220, 
-      boxWidth, 
-      boxHeight, 
-      'High Risk Factor\\\\nPresent?',
-      true,
-      '#e2e8f0'
-    );
-    
-    drawArrow(ctx, width/2, 280, width/2, 320, 'No', true);
-    
-    drawBox(
-      ctx, 
-      width/2 - boxWidth/2, 
-      320, 
-      boxWidth, 
-      boxHeight, 
-      'Framingham Risk Scoring\\\\nIS Required',
-      true,
-      '#d1fae5'
-    );
+  // Draw high risk box
+  drawBox(
+    ctx, 
+    width/2 - boxWidth/2, 
+    200, 
+    boxWidth, 
+    boxHeight, 
+    'High Risk',
+    isHighRisk,
+    isHighRisk ? '#fee2e2' : '#e2e8f0'
+  );
+  
+  // Draw very high risk box
+  drawBox(
+    ctx, 
+    3*width/4 - boxWidth/2, 
+    200, 
+    boxWidth, 
+    boxHeight, 
+    'Very High Risk',
+    isVeryHighRisk,
+    isVeryHighRisk ? '#fecaca' : '#e2e8f0'
+  );
+  
+  // Draw arrows from decision to risk categories
+  drawArrow(ctx, width/2 - 40, 150, width/4, 200, 'No auto-high criteria', needsFramingham);
+  drawArrow(ctx, width/2, 150, width/2, 200, 'High risk criteria', isHighRisk);
+  drawArrow(ctx, width/2 + 40, 150, 3*width/4, 200, 'Very high risk criteria', isVeryHighRisk);
+  
+  // Draw LDL target box
+  let ldlTarget = '';
+  if (needsFramingham) {
+    ldlTarget = 'Determine with Framingham';
+  } else if (isHighRisk) {
+    ldlTarget = 'LDL target: <1.8 mmol/L';
+  } else if (isVeryHighRisk) {
+    ldlTarget = 'LDL target: <1.4 mmol/L';
+  }
+  
+  drawBox(
+    ctx, 
+    width/2 - boxWidth*1.2/2, 
+    260, 
+    boxWidth*1.2, 
+    boxHeight, 
+    ldlTarget,
+    true,
+    '#e2e8f0'
+  );
+  
+  // Draw arrows to LDL target
+  if (needsFramingham) {
+    drawArrow(ctx, width/4, 250, width/2 - boxWidth*0.3, 260, '', true);
+  } else if (isHighRisk) {
+    drawArrow(ctx, width/2, 250, width/2, 260, '', true);
+  } else if (isVeryHighRisk) {
+    drawArrow(ctx, 3*width/4, 250, width/2 + boxWidth*0.3, 260, '', true);
   }
 }
 
