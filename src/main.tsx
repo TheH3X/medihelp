@@ -15,6 +15,7 @@ import LoginForm from "./pages/login";
 import SignupForm from "./pages/signup";
 import Logout from "./pages/logout";
 import CalculatorPage from "./pages/calculator/[id]";
+import AlgorithmPage from "./pages/algorithm/[id]";
 import AdminDashboard from "./pages/admin";
 import CalculatorEditor from "./pages/admin/calculator/[id]";
 import ParameterDictionary from "./pages/admin/parameters";
@@ -31,6 +32,7 @@ createRoot(document.getElementById("root")!).render(
           <Routes>
             <Route path='/' element={<Index />} />
             <Route path='/calculator/:id' element={<CalculatorPage />} />
+            <Route path='/algorithm/:id' element={<AlgorithmPage />} />
             <Route path='/login' element={<LoginForm />} />
             <Route path='/signup' element={<SignupForm />} />
             <Route path='/logout' element={<Logout />} />
