@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Save, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useParameterStore } from "@/lib/parameter-store";
 
 function CalculatorEditor() {
@@ -991,11 +991,18 @@ function calculate(params) {
                 {calculator.screeningQuestions.length > 0 ? (
                   <div className="space-y-2">
                     {calculator.screeningQuestions.map((question) => (
-                      <div key={question.id} className="flex items-center space-x-2">
-                        <Checkbox id={`preview-${question.id}`} />
-                        <Label htmlFor={`preview-${question.id}`} className="font-normal">
-                          {question.question}
-                        </Label>
+                      <div key={question.id} className="space-y-2">
+                        <Label>{question.question}</Label>
+                        <RadioGroup className="flex space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id={`preview-${question.id}-yes`} />
+                            <Label htmlFor={`preview-${question.id}-yes`} className="font-normal text-sm">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id={`preview-${question.id}-no`} />
+                            <Label htmlFor={`preview-${question.id}-no`} className="font-normal text-sm">No</Label>
+                          </div>
+                        </RadioGroup>
                       </div>
                     ))}
                   </div>
@@ -1015,10 +1022,16 @@ function calculate(params) {
                           <Input id={`preview-param-${param.id}`} type="number" placeholder="0" />
                         )}
                         {param.type === "boolean" && (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id={`preview-param-${param.id}`} />
-                            <Label htmlFor={`preview-param-${param.id}`} className="font-normal">Yes</Label>
-                          </div>
+                          <RadioGroup className="flex space-x-4">
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="true" id={`preview-param-${param.id}-yes`} />
+                              <Label htmlFor={`preview-param-${param.id}-yes`} className="font-normal text-sm">Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="false" id={`preview-param-${param.id}-no`} />
+                              <Label htmlFor={`preview-param-${param.id}-no`} className="font-normal text-sm">No</Label>
+                            </div>
+                          </RadioGroup>
                         )}
                         {param.type === "select" && (
                           <Select>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -71,16 +71,20 @@ export function InputField({ parameter, value, onChange }: InputFieldProps) {
       )}
 
       {parameter.type === 'boolean' && (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id={parameter.id}
-            checked={value || false}
-            onCheckedChange={onChange}
-          />
-          <Label htmlFor={parameter.id} className="font-normal text-sm">
-            Yes
-          </Label>
-        </div>
+        <RadioGroup
+          value={value === true ? "true" : value === false ? "false" : undefined}
+          onValueChange={(val) => onChange(val === "true")}
+          className="flex space-x-4"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="true" id={`${parameter.id}-yes`} />
+            <Label htmlFor={`${parameter.id}-yes`} className="font-normal text-sm">Yes</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="false" id={`${parameter.id}-no`} />
+            <Label htmlFor={`${parameter.id}-no`} className="font-normal text-sm">No</Label>
+          </div>
+        </RadioGroup>
       )}
 
       {parameter.type === 'select' && parameter.options && (

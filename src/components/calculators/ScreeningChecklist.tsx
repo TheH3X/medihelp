@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
@@ -45,21 +45,26 @@ export function ScreeningChecklist({ questions, onComplete }: ScreeningChecklist
       <CardContent className="space-y-4">
         {questions.map((question) => (
           <div key={question.id} className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id={question.id}
-                checked={answers[question.id] || false}
-                onCheckedChange={(checked) => {
-                  setAnswers({
-                    ...answers,
-                    [question.id]: checked === true,
-                  });
-                }}
-              />
-              <Label htmlFor={question.id} className="font-normal">
-                {question.question}
-              </Label>
-            </div>
+            <Label className="font-medium">{question.question}</Label>
+            <RadioGroup
+              value={answers[question.id] === true ? "true" : answers[question.id] === false ? "false" : undefined}
+              onValueChange={(value) => {
+                setAnswers({
+                  ...answers,
+                  [question.id]: value === "true",
+                });
+              }}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="true" id={`${question.id}-yes`} />
+                <Label htmlFor={`${question.id}-yes`} className="font-normal text-sm">Yes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="false" id={`${question.id}-no`} />
+                <Label htmlFor={`${question.id}-no`} className="font-normal text-sm">No</Label>
+              </div>
+            </RadioGroup>
             
             {question.eliminates && 
              answers[question.id] === false && 
