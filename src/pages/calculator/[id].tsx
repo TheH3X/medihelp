@@ -190,7 +190,7 @@ export default function CalculatorPage() {
                   </CardHeader>
                   <CardContent>
                     {!screeningEligible && (
-                      <Alert variant="warning" className="mb-4">
+                      <Alert className="mb-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
                           Based on the screening questions, this calculator may not be appropriate for your patient.
