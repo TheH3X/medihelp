@@ -7,7 +7,8 @@ import {
   BarChart, 
   Users,
   FileJson,
-  BookOpen
+  BookOpen,
+  GitBranch
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,11 @@ export function AdminSidebar() {
       title: "Calculators",
       icon: Calculator,
       href: "/admin",
+    },
+    {
+      title: "Algorithms",
+      icon: GitBranch,
+      href: "/admin/algorithms",
     },
     {
       title: "Parameters",

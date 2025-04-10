@@ -18,6 +18,8 @@ import CalculatorPage from "./pages/calculator/[id]";
 import AlgorithmPage from "./pages/algorithm/[id]";
 import AdminDashboard from "./pages/admin";
 import CalculatorEditor from "./pages/admin/calculator/[id]";
+import AlgorithmsManagement from "./pages/admin/algorithms";
+import AlgorithmEditor from "./pages/admin/algorithms/[id]";
 import ParameterDictionary from "./pages/admin/parameters";
 import ImportExport from "./pages/admin/import-export";
 import Documentation from "./pages/admin/documentation";
@@ -38,6 +40,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path='/logout' element={<Logout />} />
             <Route path='/admin' element={<AdminDashboard />} />
             <Route path='/admin/calculator/:id' element={<CalculatorEditor />} />
+            <Route path='/admin/algorithms' element={<AlgorithmsManagement />} />
+            <Route path='/admin/algorithms/:id' element={<AlgorithmEditor />} />
             <Route path='/admin/parameters' element={<ParameterDictionary />} />
             <Route path='/admin/import-export' element={<ImportExport />} />
             <Route path='/admin/documentation' element={<Documentation />} />
