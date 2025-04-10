@@ -16,7 +16,7 @@ import {
   FileUp, 
   FileDown, 
   AlertCircle, 
-  Check, 
+  Check,
   Copy,
   HelpCircle
 } from "lucide-react";
@@ -116,7 +116,7 @@ function ImportExport() {
         });
       } else if (importFormat === "csv") {
         // Basic CSV validation
-        const lines = importData.trim().split('\\n');
+        const lines = importData.trim().split('\\\n');
         if (lines.length < 2) {
           setValidationResult({
             valid: false,
@@ -225,7 +225,7 @@ function ImportExport() {
         ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
       });
       
-      setExportData([headers.join(','), ...rows].join('\\n'));
+      setExportData([headers.join(','), ...rows].join('\\\n'));
     } else if (exportFormat === "excel-template") {
       // For Excel template, we provide a JSON structure that can be used to create an Excel template
       const template = {

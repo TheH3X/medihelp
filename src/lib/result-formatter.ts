@@ -27,28 +27,11 @@ export function formatClinicalText(options: FormatResultOptions): string {
       }
       return `${label}: ${value}`;
     })
-    .join('\\\n');
+    .join('\\\\n');
   
-  // Special handling for combined CV risk calculator
-  if (calculatorName.includes('Combined CV Risk')) {
-    const additionalData = result.additionalData || {};
-    const riskCategory = additionalData.riskCategory || '';
-    const ldlTarget = additionalData.ldlTarget || '';
-    const treatmentRecommendation = additionalData.treatmentRecommendation || '';
-    
-    return `${calculatorName} Assessment\\\n\\\n` +
-      `Inputs:\\\n${inputsText}\\\n\\\n` +
-      `Risk Score: ${typeof result.score === 'number' ? result.score.toFixed(1) : result.score}% 10-year risk\\\n` +
-      `Risk Category: ${riskCategory}\\\n` +
-      `LDL Target: ${ldlTarget}\\\n` +
-      `Treatment Recommendation: ${treatmentRecommendation}\\\n\\\n` +
-      `Interpretation: ${result.interpretation}`;
-  }
-  
-  // Standard format for other calculators
-  return `${calculatorName} Assessment\\\n\\\n` +
-    `Inputs:\\\n${inputsText}\\\n\\\n` +
-    `Score: ${result.score}\\\n` +
+  return `${calculatorName} Assessment\\\\n\\\\n` +
+    `Inputs:\\\\n${inputsText}\\\\n\\\\n` +
+    `Score: ${result.score}\\\\n` +
     `Interpretation: ${result.interpretation}`;
 }
 
@@ -64,31 +47,12 @@ export function formatPrinterFriendly(options: FormatResultOptions): string {
       }
       return `${label}: ${value}`;
     })
-    .join('\\\n');
+    .join('\\\\n');
   
-  // Special handling for combined CV risk calculator
-  if (calculatorName.includes('Combined CV Risk')) {
-    const additionalData = result.additionalData || {};
-    const riskCategory = additionalData.riskCategory || '';
-    const ldlTarget = additionalData.ldlTarget || '';
-    const treatmentRecommendation = additionalData.treatmentRecommendation || '';
-    
-    return `${calculatorName} Assessment\\\n\\\n` +
-      `Date: ${new Date().toLocaleDateString()}\\\n\\\n` +
-      `Inputs:\\\n${inputsText}\\\n\\\n` +
-      `Risk Score: ${typeof result.score === 'number' ? result.score.toFixed(1) : result.score}% 10-year risk\\\n` +
-      `Risk Category: ${riskCategory}\\\n` +
-      `LDL Target: ${ldlTarget}\\\n` +
-      `Treatment Recommendation: ${treatmentRecommendation}\\\n\\\n` +
-      `Interpretation: ${result.interpretation}\\\n\\\n` +
-      `This assessment was generated using the Clinical Calculator App.`;
-  }
-  
-  // Standard format for other calculators
-  return `${calculatorName} Assessment\\\n\\\n` +
-    `Date: ${new Date().toLocaleDateString()}\\\n\\\n` +
-    `Inputs:\\\n${inputsText}\\\n\\\n` +
-    `Score: ${result.score}\\\n` +
-    `Interpretation: ${result.interpretation}\\\n\\\n` +
+  return `${calculatorName} Assessment\\\\n\\\\n` +
+    `Date: ${new Date().toLocaleDateString()}\\\\n\\\\n` +
+    `Inputs:\\\\n${inputsText}\\\\n\\\\n` +
+    `Score: ${result.score}\\\\n` +
+    `Interpretation: ${result.interpretation}\\\\n\\\\n` +
     `This assessment was generated using the Clinical Calculator App.`;
 }

@@ -229,7 +229,6 @@ export default function CalculatorPage() {
                 {result && (
                   <ResultsDisplay
                     calculatorName={calculator.name}
-                    calculatorId={calculator.id}
                     result={result}
                     inputs={inputs}
                     parameterLabels={parameterLabels}
