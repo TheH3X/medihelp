@@ -7,6 +7,10 @@ import { fine } from "@/lib/fine";
 export function Header() {
   const { data: session } = fine.auth.useSession();
   const isAdmin = session?.user?.email === "admin@example.com"; // In a real app, use a proper admin check
+  
+  // For development, always show admin button
+  const isDevelopment = true; // Would be environment-based in production
+  const showAdminButton = isDevelopment || isAdmin;
 
   return (
     <header className="border-b bg-background">
@@ -22,7 +26,7 @@ export function Header() {
               Home
             </Button>
           </Link>
-          {isAdmin && (
+          {showAdminButton && (
             <Link to="/admin">
               <Button variant="ghost" size="sm">
                 <Settings className="mr-2 h-4 w-4" />
