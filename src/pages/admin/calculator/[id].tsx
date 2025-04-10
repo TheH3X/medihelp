@@ -648,9 +648,53 @@ function CalculatorEditor() {
                                 Options
                               </Label>
                               <div className="col-span-3 space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                  Options for select parameters can be added after creating the parameter.
-                                </p>
+                                {newParameter.options && newParameter.options.map((option, index) => (
+                                  <div key={index} className="flex items-center gap-2">
+                                    <Input 
+                                      value={option.label}
+                                      onChange={(e) => {
+                                        const updatedOptions = [...(newParameter.options || [])];
+                                        updatedOptions[index] = { ...option, label: e.target.value };
+                                        setNewParameter({...newParameter, options: updatedOptions});
+                                      }}
+                                      placeholder="Label"
+                                      className="flex-1"
+                                    />
+                                    <Input 
+                                      value={option.value.toString()}
+                                      onChange={(e) => {
+                                        const updatedOptions = [...(newParameter.options || [])];
+                                        updatedOptions[index] = { ...option, value: e.target.value };
+                                        setNewParameter({...newParameter, options: updatedOptions});
+                                      }}
+                                      placeholder="Value"
+                                      className="flex-1"
+                                    />
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => {
+                                        const updatedOptions = [...(newParameter.options || [])];
+                                        updatedOptions.splice(index, 1);
+                                        setNewParameter({...newParameter, options: updatedOptions});
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updatedOptions = [...(newParameter.options || [])];
+                                    updatedOptions.push({ label: "", value: "" });
+                                    setNewParameter({...newParameter, options: updatedOptions});
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Option
+                                </Button>
                               </div>
                             </div>
                           )}
