@@ -238,14 +238,14 @@ function ImportExport() {
             type: "number/boolean/select",
             unit: "Optional unit",
             tooltip: "Explanation of the parameter",
-            storable: true/false
+            storable: true // Fixed: Using actual boolean value instead of true/false type
           }
         ],
         screeningQuestions: [
           {
             id: "question-id",
             question: "Question text",
-            eliminates: true/false,
+            eliminates: true, // Fixed: Using actual boolean value
             eliminationMessage: "Message shown when eliminated"
           }
         ],
