@@ -4,7 +4,10 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { ProtectedRoute } from "@/components/auth/route-components";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { 
   FileJson, 
@@ -13,14 +16,13 @@ import {
   FileDown, 
   AlertCircle, 
   Check, 
-  Copy
+  Copy,
+  HelpCircle
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { calculators, type CalculatorDefinition } from "@/lib/calculator-definitions";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormatDocumentation } from "@/components/admin/FormatDocumentation";
 
 function ImportExport() {
   const { toast } = useToast();
@@ -36,6 +38,7 @@ function ImportExport() {
     details?: string[];
   } | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [showDocumentation, setShowDocumentation] = useState(false);
   
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,14 +241,14 @@ function ImportExport() {
             type: "number/boolean/select",
             unit: "Optional unit",
             tooltip: "Explanation of the parameter",
-            storable: true // Fixed: Using actual boolean value instead of true/false type
+            storable: true
           }
         ],
         screeningQuestions: [
           {
             id: "question-id",
             question: "Question text",
-            eliminates: true, // Fixed: Using actual boolean value
+            eliminates: true,
             eliminationMessage: "Message shown when eliminated"
           }
         ],
@@ -327,7 +330,22 @@ function ImportExport() {
         <AdminSidebar />
         <main className="flex-1 p-6">
           <div className="max-w-6xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">Import & Export</h1>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold">Import & Export</h1>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDocumentation(!showDocumentation)}
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                {showDocumentation ? "Hide Documentation" : "Show Documentation"}
+              </Button>
+            </div>
+            
+            {showDocumentation && (
+              <div className="mb-6">
+                <FormatDocumentation />
+              </div>
+            )}
             
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
@@ -555,43 +573,6 @@ function ImportExport() {
                       Download
                     </Button>
                   </CardFooter>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Import/Export Documentation</CardTitle>
-                    <CardDescription>
-                      Learn how to format your calculator definitions for import
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-medium">JSON Format</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          The JSON format supports complete calculator definitions including parameters, 
-                          screening questions, interpretations, and references.
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-lg font-medium">CSV Format</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          The CSV format only supports parameter definitions. The first row must be a header
-                          with the following columns: id, name, type, unit, tooltip, storable.
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-lg font-medium">Excel Format</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          For Excel files, you'll need to export to JSON format first. You can use the Excel
-                          template option to generate a template that you can fill in Excel and then convert
-                          to JSON.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>

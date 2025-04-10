@@ -6,7 +6,8 @@ import {
   Settings, 
   BarChart, 
   Users,
-  FileJson
+  FileJson,
+  BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,11 @@ export function AdminSidebar() {
       title: "Import/Export",
       icon: FileJson,
       href: "/admin/import-export",
+    },
+    {
+      title: "Documentation",
+      icon: BookOpen,
+      href: "/admin/documentation",
     },
     {
       title: "Settings",
