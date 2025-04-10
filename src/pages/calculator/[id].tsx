@@ -7,6 +7,7 @@ import { StoredParametersList } from "@/components/parameters/StoredParametersLi
 import { InputField } from "@/components/calculators/InputField";
 import { ScreeningChecklist } from "@/components/calculators/ScreeningChecklist";
 import { ResultsDisplay } from "@/components/results/ResultsDisplay";
+import { AlgorithmDiagram } from "@/components/results/AlgorithmDiagram";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calculator, AlertCircle, Save } from "lucide-react";
@@ -227,22 +228,41 @@ export default function CalculatorPage() {
               
               <TabsContent value="results" className="mt-6">
                 {result && (
-                  <ResultsDisplay
-                    calculatorName={calculator.name}
-                    result={result}
-                    inputs={inputs}
-                    parameterLabels={parameterLabels}
-                  />
+                  <>
+                    <ResultsDisplay
+                      calculatorName={calculator.name}
+                      result={result}
+                      inputs={inputs}
+                      parameterLabels={parameterLabels}
+                    />
+                    
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-2">Algorithm Visualization</h3>
+                      <AlgorithmDiagram 
+                        calculatorId={calculator.id}
+                        result={result}
+                        inputs={inputs}
+                      />
+                    </div>
+                    
+                    {/* Conditionally render specialized result components based on calculator type */}
+                    {calculator.id === 'cv-risk' && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-medium mb-2">Treatment Recommendations</h3>
+                        <CVRiskResultsMatrix result={result} inputs={inputs} />
+                      </div>
+                    )}
+                    
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-2">References</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                        {calculator.references.map((reference, index) => (
+                          <li key={index}>{reference}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
                 )}
-                
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-2">References</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                    {calculator.references.map((reference, index) => (
-                      <li key={index}>{reference}</li>
-                    ))}
-                  </ul>
-                </div>
               </TabsContent>
             </Tabs>
           </div>
