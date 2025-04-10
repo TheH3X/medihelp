@@ -18,6 +18,7 @@ import CalculatorPage from "./pages/calculator/[id]";
 import AdminDashboard from "./pages/admin";
 import CalculatorEditor from "./pages/admin/calculator/[id]";
 import ParameterDictionary from "./pages/admin/parameters";
+import ImportExport from "./pages/admin/import-export";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path='/admin' element={<AdminDashboard />} />
             <Route path='/admin/calculator/:id' element={<CalculatorEditor />} />
             <Route path='/admin/parameters' element={<ParameterDictionary />} />
+            <Route path='/admin/import-export' element={<ImportExport />} />
           </Routes>
         </BrowserRouter>
         <Sonner />
