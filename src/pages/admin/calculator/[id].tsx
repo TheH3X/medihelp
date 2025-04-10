@@ -62,6 +62,7 @@ function CalculatorEditor() {
     question: "",
     type: "boolean",
     eliminates: false,
+    eliminationMessage: "",
   });
   
   const [newRange, setNewRange] = useState({
@@ -149,6 +150,7 @@ function CalculatorEditor() {
       question: "",
       type: "boolean",
       eliminates: false,
+      eliminationMessage: "",
     });
     
     setIsAddingQuestion(false);
@@ -235,6 +237,18 @@ function CalculatorEditor() {
     setCalculator({
       ...calculator,
       references: updatedReferences,
+    });
+  };
+  
+  const handleUpdateQuestion = (index: number, field: string, value: any) => {
+    const updatedQuestions = [...calculator.screeningQuestions];
+    updatedQuestions[index] = {
+      ...updatedQuestions[index],
+      [field]: value
+    };
+    setCalculator({
+      ...calculator,
+      screeningQuestions: updatedQuestions
     });
   };
   
@@ -643,14 +657,14 @@ function CalculatorEditor() {
                           {newQuestion.eliminates && (
                             <div className="grid grid-cols-4 items-center gap-4">
                               <Label htmlFor="elimination-message" className="text-right">
-                                Message
+                                Warning Message
                               </Label>
                               <Textarea
                                 id="elimination-message"
                                 value={newQuestion.eliminationMessage || ""}
                                 onChange={(e) => setNewQuestion({...newQuestion, eliminationMessage: e.target.value})}
                                 className="col-span-3"
-                                placeholder="Message to show when eliminated"
+                                placeholder="Custom warning message to show when eliminated"
                                 rows={2}
                               />
                             </div>
@@ -689,12 +703,25 @@ function CalculatorEditor() {
                             </CardHeader>
                             <CardContent className="py-2">
                               <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium">Eliminates:</span> {question.eliminates ? "Yes" : "No"}
+                                <div className="col-span-2 flex items-center space-x-2">
+                                  <Label htmlFor={`question-${index}-eliminates`}>Eliminates:</Label>
+                                  <Switch
+                                    id={`question-${index}-eliminates`}
+                                    checked={question.eliminates}
+                                    onCheckedChange={(checked) => handleUpdateQuestion(index, 'eliminates', checked)}
+                                  />
                                 </div>
-                                {question.eliminates && question.eliminationMessage && (
-                                  <div className="col-span-2">
-                                    <span className="font-medium">Elimination Message:</span> {question.eliminationMessage}
+                                
+                                {question.eliminates && (
+                                  <div className="col-span-2 space-y-2">
+                                    <Label htmlFor={`question-${index}-message`}>Warning Message:</Label>
+                                    <Textarea
+                                      id={`question-${index}-message`}
+                                      value={question.eliminationMessage || ""}
+                                      onChange={(e) => handleUpdateQuestion(index, 'eliminationMessage', e.target.value)}
+                                      placeholder="Custom warning message to show when eliminated"
+                                      rows={2}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -1003,6 +1030,12 @@ function calculate(params) {
                             <Label htmlFor={`preview-${question.id}-no`} className="font-normal text-sm">No</Label>
                           </div>
                         </RadioGroup>
+                        
+                        {question.eliminates && question.eliminationMessage && (
+                          <div className="text-sm text-destructive mt-1">
+                            Warning: {question.eliminationMessage}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
