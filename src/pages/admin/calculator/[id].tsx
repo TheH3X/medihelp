@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Save, Eye } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Eye, Edit, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useParameterStore } from "@/lib/parameter-store";
@@ -45,9 +45,17 @@ function CalculatorEditor() {
   const [activeTab, setActiveTab] = useState("basic");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddingParameter, setIsAddingParameter] = useState(false);
+  const [isEditingParameter, setIsEditingParameter] = useState(false);
+  const [editingParameterIndex, setEditingParameterIndex] = useState<number | null>(null);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
+  const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
   const [isAddingRange, setIsAddingRange] = useState(false);
+  const [isEditingRange, setIsEditingRange] = useState(false);
+  const [editingRangeIndex, setEditingRangeIndex] = useState<number | null>(null);
   const [isAddingReference, setIsAddingReference] = useState(false);
+  const [isEditingReference, setIsEditingReference] = useState(false);
+  const [editingReferenceIndex, setEditingReferenceIndex] = useState<number | null>(null);
   
   const [newParameter, setNewParameter] = useState<ParameterDefinition>({
     id: "",
@@ -118,6 +126,45 @@ function CalculatorEditor() {
     setIsAddingParameter(false);
   };
   
+  const handleEditParameter = () => {
+    // Validate
+    if (!newParameter.id || !newParameter.name || editingParameterIndex === null) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Update parameter
+    const updatedParameters = [...calculator.parameters];
+    updatedParameters[editingParameterIndex] = newParameter;
+    
+    setCalculator({
+      ...calculator,
+      parameters: updatedParameters,
+    });
+    
+    // Reset form
+    setNewParameter({
+      id: "",
+      name: "",
+      type: "number",
+      tooltip: "",
+      storable: false,
+    });
+    
+    setIsEditingParameter(false);
+    setEditingParameterIndex(null);
+  };
+  
+  const handleEditParameterClick = (index: number) => {
+    setEditingParameterIndex(index);
+    setNewParameter({...calculator.parameters[index]});
+    setIsEditingParameter(true);
+  };
+  
   const handleRemoveParameter = (index: number) => {
     const updatedParameters = [...calculator.parameters];
     updatedParameters.splice(index, 1);
@@ -154,6 +201,45 @@ function CalculatorEditor() {
     });
     
     setIsAddingQuestion(false);
+  };
+  
+  const handleEditQuestion = () => {
+    // Validate
+    if (!newQuestion.id || !newQuestion.question || editingQuestionIndex === null) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Update question
+    const updatedQuestions = [...calculator.screeningQuestions];
+    updatedQuestions[editingQuestionIndex] = newQuestion;
+    
+    setCalculator({
+      ...calculator,
+      screeningQuestions: updatedQuestions,
+    });
+    
+    // Reset form
+    setNewQuestion({
+      id: "",
+      question: "",
+      type: "boolean",
+      eliminates: false,
+      eliminationMessage: "",
+    });
+    
+    setIsEditingQuestion(false);
+    setEditingQuestionIndex(null);
+  };
+  
+  const handleEditQuestionClick = (index: number) => {
+    setEditingQuestionIndex(index);
+    setNewQuestion({...calculator.screeningQuestions[index]});
+    setIsEditingQuestion(true);
   };
   
   const handleRemoveQuestion = (index: number) => {
@@ -196,6 +282,47 @@ function CalculatorEditor() {
     setIsAddingRange(false);
   };
   
+  const handleEditRange = () => {
+    // Validate
+    if (newRange.interpretation === "" || editingRangeIndex === null) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Update range
+    const updatedRanges = [...calculator.interpretations.ranges];
+    updatedRanges[editingRangeIndex] = newRange;
+    
+    setCalculator({
+      ...calculator,
+      interpretations: {
+        ...calculator.interpretations,
+        ranges: updatedRanges,
+      },
+    });
+    
+    // Reset form
+    setNewRange({
+      min: 0,
+      max: 0,
+      interpretation: "",
+      severity: "low",
+    });
+    
+    setIsEditingRange(false);
+    setEditingRangeIndex(null);
+  };
+  
+  const handleEditRangeClick = (index: number) => {
+    setEditingRangeIndex(index);
+    setNewRange({...calculator.interpretations.ranges[index]});
+    setIsEditingRange(true);
+  };
+  
   const handleRemoveRange = (index: number) => {
     const updatedRanges = [...calculator.interpretations.ranges];
     updatedRanges.splice(index, 1);
@@ -229,6 +356,39 @@ function CalculatorEditor() {
     setNewReference("");
     
     setIsAddingReference(false);
+  };
+  
+  const handleEditReference = () => {
+    // Validate
+    if (!newReference || editingReferenceIndex === null) {
+      toast({
+        title: "Missing information",
+        description: "Please enter a reference",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Update reference
+    const updatedReferences = [...calculator.references];
+    updatedReferences[editingReferenceIndex] = newReference;
+    
+    setCalculator({
+      ...calculator,
+      references: updatedReferences,
+    });
+    
+    // Reset form
+    setNewReference("");
+    
+    setIsEditingReference(false);
+    setEditingReferenceIndex(null);
+  };
+  
+  const handleEditReferenceClick = (index: number) => {
+    setEditingReferenceIndex(index);
+    setNewReference(calculator.references[index]);
+    setIsEditingReference(true);
   };
   
   const handleRemoveReference = (index: number) => {
@@ -491,6 +651,170 @@ function CalculatorEditor() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    
+                    {/* Edit Parameter Dialog */}
+                    <Dialog open={isEditingParameter} onOpenChange={setIsEditingParameter}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Parameter</DialogTitle>
+                          <DialogDescription>
+                            Modify this parameter's details.
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-param-id" className="text-right">
+                              ID
+                            </Label>
+                            <Input
+                              id="edit-param-id"
+                              value={newParameter.id}
+                              onChange={(e) => setNewParameter({...newParameter, id: e.target.value})}
+                              className="col-span-3"
+                              placeholder="e.g., age"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-param-name" className="text-right">
+                              Name
+                            </Label>
+                            <Input
+                              id="edit-param-name"
+                              value={newParameter.name}
+                              onChange={(e) => setNewParameter({...newParameter, name: e.target.value})}
+                              className="col-span-3"
+                              placeholder="e.g., Age"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-param-type" className="text-right">
+                              Type
+                            </Label>
+                            <Select 
+                              value={newParameter.type}
+                              onValueChange={(value: "number" | "select" | "boolean") => setNewParameter({...newParameter, type: value})}
+                            >
+                              <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select a type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="number">Number</SelectItem>
+                                <SelectItem value="select">Select</SelectItem>
+                                <SelectItem value="boolean">Boolean</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-param-unit" className="text-right">
+                              Unit
+                            </Label>
+                            <Input
+                              id="edit-param-unit"
+                              value={newParameter.unit || ""}
+                              onChange={(e) => setNewParameter({...newParameter, unit: e.target.value})}
+                              className="col-span-3"
+                              placeholder="e.g., years"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-param-tooltip" className="text-right">
+                              Tooltip
+                            </Label>
+                            <Textarea
+                              id="edit-param-tooltip"
+                              value={newParameter.tooltip}
+                              onChange={(e) => setNewParameter({...newParameter, tooltip: e.target.value})}
+                              className="col-span-3"
+                              placeholder="Explanation of this parameter"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-param-storable" className="text-right">
+                              Storable
+                            </Label>
+                            <div className="flex items-center space-x-2 col-span-3">
+                              <Switch
+                                id="edit-param-storable"
+                                checked={newParameter.storable}
+                                onCheckedChange={(checked) => setNewParameter({...newParameter, storable: checked})}
+                              />
+                              <Label htmlFor="edit-param-storable">
+                                Allow this parameter to be stored for reuse
+                              </Label>
+                            </div>
+                          </div>
+                          
+                          {newParameter.type === "select" && (
+                            <div className="grid grid-cols-4 items-start gap-4">
+                              <Label className="text-right mt-2">
+                                Options
+                              </Label>
+                              <div className="col-span-3 space-y-2">
+                                {newParameter.options && newParameter.options.map((option, index) => (
+                                  <div key={index} className="flex items-center gap-2">
+                                    <Input 
+                                      value={option.label}
+                                      onChange={(e) => {
+                                        const updatedOptions = [...(newParameter.options || [])];
+                                        updatedOptions[index] = { ...option, label: e.target.value };
+                                        setNewParameter({...newParameter, options: updatedOptions});
+                                      }}
+                                      placeholder="Label"
+                                      className="flex-1"
+                                    />
+                                    <Input 
+                                      value={option.value.toString()}
+                                      onChange={(e) => {
+                                        const updatedOptions = [...(newParameter.options || [])];
+                                        updatedOptions[index] = { ...option, value: e.target.value };
+                                        setNewParameter({...newParameter, options: updatedOptions});
+                                      }}
+                                      placeholder="Value"
+                                      className="flex-1"
+                                    />
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => {
+                                        const updatedOptions = [...(newParameter.options || [])];
+                                        updatedOptions.splice(index, 1);
+                                        setNewParameter({...newParameter, options: updatedOptions});
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updatedOptions = [...(newParameter.options || [])];
+                                    updatedOptions.push({ label: "", value: "" });
+                                    setNewParameter({...newParameter, options: updatedOptions});
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Option
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => {
+                            setIsEditingParameter(false);
+                            setEditingParameterIndex(null);
+                          }}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleEditParameter}>Save Changes</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
                     {calculator.parameters.length === 0 ? (
@@ -504,14 +828,23 @@ function CalculatorEditor() {
                             <CardHeader className="py-3">
                               <div className="flex items-center justify-between">
                                 <CardTitle className="text-lg">{param.name}</CardTitle>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleRemoveParameter(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditParameterClick(index)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRemoveParameter(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                               <CardDescription>ID: {param.id}</CardDescription>
                             </CardHeader>
@@ -677,6 +1010,86 @@ function CalculatorEditor() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    
+                    {/* Edit Question Dialog */}
+                    <Dialog open={isEditingQuestion} onOpenChange={setIsEditingQuestion}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Screening Question</DialogTitle>
+                          <DialogDescription>
+                            Modify this screening question's details.
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-question-id" className="text-right">
+                              ID
+                            </Label>
+                            <Input
+                              id="edit-question-id"
+                              value={newQuestion.id}
+                              onChange={(e) => setNewQuestion({...newQuestion, id: e.target.value})}
+                              className="col-span-3"
+                              placeholder="e.g., patientAge"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-question-text" className="text-right">
+                              Question
+                            </Label>
+                            <Textarea
+                              id="edit-question-text"
+                              value={newQuestion.question}
+                              onChange={(e) => setNewQuestion({...newQuestion, question: e.target.value})}
+                              className="col-span-3"
+                              placeholder="e.g., Is the patient over 18 years old?"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-question-eliminates" className="text-right">
+                              Eliminates
+                            </Label>
+                            <div className="flex items-center space-x-2 col-span-3">
+                              <Switch
+                                id="edit-question-eliminates"
+                                checked={newQuestion.eliminates}
+                                onCheckedChange={(checked) => setNewQuestion({...newQuestion, eliminates: checked})}
+                              />
+                              <Label htmlFor="edit-question-eliminates">
+                                A "No" answer makes calculator inappropriate
+                              </Label>
+                            </div>
+                          </div>
+                          {newQuestion.eliminates && (
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="edit-elimination-message" className="text-right">
+                                Warning Message
+                              </Label>
+                              <Textarea
+                                id="edit-elimination-message"
+                                value={newQuestion.eliminationMessage || ""}
+                                onChange={(e) => setNewQuestion({...newQuestion, eliminationMessage: e.target.value})}
+                                className="col-span-3"
+                                placeholder="Message to show when eliminated"
+                                rows={2}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => {
+                            setIsEditingQuestion(false);
+                            setEditingQuestionIndex(null);
+                          }}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleEditQuestion}>Save Changes</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
                     {calculator.screeningQuestions.length === 0 ? (
@@ -690,14 +1103,23 @@ function CalculatorEditor() {
                             <CardHeader className="py-3">
                               <div className="flex items-center justify-between">
                                 <CardTitle className="text-lg">{question.question}</CardTitle>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleRemoveQuestion(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditQuestionClick(index)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRemoveQuestion(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                               <CardDescription>ID: {question.id}</CardDescription>
                             </CardHeader>
@@ -825,6 +1247,87 @@ function CalculatorEditor() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    
+                    {/* Edit Range Dialog */}
+                    <Dialog open={isEditingRange} onOpenChange={setIsEditingRange}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Score Range</DialogTitle>
+                          <DialogDescription>
+                            Modify this score range's details.
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-range-min" className="text-right">
+                              Min Score
+                            </Label>
+                            <Input
+                              id="edit-range-min"
+                              type="number"
+                              value={newRange.min}
+                              onChange={(e) => setNewRange({...newRange, min: Number(e.target.value)})}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-range-max" className="text-right">
+                              Max Score
+                            </Label>
+                            <Input
+                              id="edit-range-max"
+                              type="number"
+                              value={newRange.max}
+                              onChange={(e) => setNewRange({...newRange, max: Number(e.target.value)})}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-range-interpretation" className="text-right">
+                              Interpretation
+                            </Label>
+                            <Textarea
+                              id="edit-range-interpretation"
+                              value={newRange.interpretation}
+                              onChange={(e) => setNewRange({...newRange, interpretation: e.target.value})}
+                              className="col-span-3"
+                              placeholder="e.g., Low risk of adverse events"
+                              rows={2}
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-range-severity" className="text-right">
+                              Severity
+                            </Label>
+                            <Select 
+                              value={newRange.severity}
+                              onValueChange={(value) => setNewRange({...newRange, severity: value})}
+                            >
+                              <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select severity level" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="moderate">Moderate</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                                <SelectItem value="very-high">Very High</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => {
+                            setIsEditingRange(false);
+                            setEditingRangeIndex(null);
+                          }}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleEditRange}>Save Changes</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
                     {calculator.interpretations.ranges.length === 0 ? (
@@ -840,14 +1343,23 @@ function CalculatorEditor() {
                                 <CardTitle className="text-lg">
                                   Score: {range.min} - {range.max}
                                 </CardTitle>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleRemoveRange(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditRangeClick(index)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRemoveRange(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </CardHeader>
                             <CardContent className="py-2">
@@ -968,6 +1480,44 @@ function calculate(params) {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    
+                    {/* Edit Reference Dialog */}
+                    <Dialog open={isEditingReference} onOpenChange={setIsEditingReference}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Reference</DialogTitle>
+                          <DialogDescription>
+                            Modify this reference.
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-reference-text" className="text-right">
+                              Reference
+                            </Label>
+                            <Textarea
+                              id="edit-reference-text"
+                              value={newReference}
+                              onChange={(e) => setNewReference(e.target.value)}
+                              className="col-span-3"
+                              placeholder="e.g., Smith J, et al. Title of paper. Journal Name. 2020;10(2):123-145."
+                              rows={4}
+                            />
+                          </div>
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => {
+                            setIsEditingReference(false);
+                            setEditingReferenceIndex(null);
+                          }}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleEditReference}>Save Changes</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
                     {calculator.references.length === 0 ? (
@@ -979,14 +1529,23 @@ function calculate(params) {
                         {calculator.references.map((reference, index) => (
                           <div key={index} className="flex items-start gap-2 p-3 border rounded-md">
                             <div className="flex-1">{reference}</div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-destructive hover:bg-destructive/10"
-                              onClick={() => handleRemoveReference(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditReferenceClick(index)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveReference(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
