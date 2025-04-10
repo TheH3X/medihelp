@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import type { ScreeningQuestion } from "@/lib/calculator-definitions";
 
@@ -25,14 +26,13 @@ export function ScreeningChecklist({ questions, onComplete }: ScreeningChecklist
     return false;
   });
   
-  const isEligible = allAnswered && eliminatingQuestions.length === 0;
+  const isEligible = eliminatingQuestions.length === 0;
   
-  // Update parent component when eligibility changes
-  useEffect(() => {
+  const handleNext = () => {
     if (allAnswered) {
       onComplete(isEligible);
     }
-  }, [allAnswered, isEligible, onComplete]);
+  };
 
   return (
     <Card>
@@ -86,7 +86,7 @@ export function ScreeningChecklist({ questions, onComplete }: ScreeningChecklist
             <AlertTitle>Calculator may not be appropriate</AlertTitle>
             <AlertDescription>
               Based on your answers, this calculator may not be appropriate for your patient.
-              You can still proceed, but interpret results with caution.
+              You can still proceed if you're sure, but interpret results with caution.
             </AlertDescription>
           </Alert>
         )}
@@ -99,6 +99,15 @@ export function ScreeningChecklist({ questions, onComplete }: ScreeningChecklist
             </AlertDescription>
           </Alert>
         )}
+        
+        <div className="flex justify-end mt-4">
+          <Button 
+            onClick={handleNext} 
+            disabled={!allAnswered}
+          >
+            Next
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

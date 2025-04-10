@@ -67,9 +67,7 @@ export default function CalculatorPage() {
   
   const handleScreeningComplete = (isEligible: boolean) => {
     setScreeningComplete(true);
-    if (isEligible) {
-      setActiveTab("calculator");
-    }
+    setActiveTab("calculator");
   };
   
   if (!calculator) {
