@@ -1,30 +1,18 @@
-import type { ReactNode } from 'react';
+import type { ParameterDefinition } from './calculator-definitions';
 
-export interface AlgorithmParameter {
+export interface AlgorithmNode {
   id: string;
-  name: string;
-  type: 'number' | 'select' | 'boolean';
-  unit?: string;
-  options?: { value: string | number; label: string }[];
-  tooltip: string;
-  storable: boolean;
-}
-
-export interface AlgorithmStep {
-  id: string;
-  title: string;
+  type: 'question' | 'decision' | 'action' | 'result';
+  content: string;
   description?: string;
-  question?: string;
-  parameters: AlgorithmParameter[];
-  nextStep: (inputs: Record<string, any>) => string | null; // Returns ID of next step or null if end
-}
-
-export interface AlgorithmResult {
-  title: string;
-  description: string;
-  recommendation: string;
-  severity?: 'low' | 'moderate' | 'high' | 'very-high';
-  additionalData?: Record<string, any>;
+  parameters?: ParameterDefinition[];
+  branches?: {
+    condition: string;
+    evaluator: (params: Record<string, any>) => boolean;
+    nextNodeId: string;
+    label: string;
+  }[];
+  recommendations?: string[];
 }
 
 export interface AlgorithmDefinition {
@@ -32,511 +20,774 @@ export interface AlgorithmDefinition {
   name: string;
   description: string;
   category: string;
-  initialStep: string;
-  steps: Record<string, AlgorithmStep>;
-  results: Record<string, AlgorithmResult>;
+  startNodeId: string;
+  nodes: Record<string, AlgorithmNode>;
+  preparationInfo: {
+    requiredParameters: string[]; // IDs of parameters needed at start
+    potentialParameters: string[]; // IDs of parameters that might be needed later
+  };
+  references: string[];
 }
 
-// Example algorithm: Chest Pain Triage
-export const chestPainAlgorithm: AlgorithmDefinition = {
-  id: 'chest-pain-triage',
-  name: 'Chest Pain Triage Algorithm',
-  description: 'Guides the initial assessment and triage of patients presenting with chest pain',
-  category: 'Emergency Medicine',
-  initialStep: 'initial-assessment',
-  steps: {
+// Cardiovascular Risk Assessment Algorithm
+const cvRiskAlgorithm: AlgorithmDefinition = {
+  id: 'cv-risk',
+  name: 'Cardiovascular Risk Assessment',
+  description: 'Algorithm for assessing cardiovascular risk and determining treatment approach',
+  category: 'Cardiology',
+  startNodeId: 'initial-assessment',
+  nodes: {
     'initial-assessment': {
       id: 'initial-assessment',
-      title: 'Initial Assessment',
-      description: 'Assess for immediately life-threatening conditions',
-      question: 'Does the patient have any of the following?',
+      type: 'question',
+      content: 'Does the patient have established cardiovascular disease?',
       parameters: [
         {
-          id: 'hypotension',
-          name: 'Hypotension (SBP < 90 mmHg)',
+          id: 'established-cvd',
+          name: 'Established CVD',
           type: 'boolean',
-          tooltip: 'Systolic blood pressure less than 90 mmHg',
-          storable: false,
-        },
-        {
-          id: 'acuteSOB',
-          name: 'Acute severe shortness of breath',
-          type: 'boolean',
-          tooltip: 'Patient reports severe difficulty breathing or shows signs of respiratory distress',
-          storable: false,
-        },
-        {
-          id: 'syncope',
-          name: 'Syncope or near-syncope',
-          type: 'boolean',
-          tooltip: 'Loss of consciousness or feeling like they might pass out',
-          storable: false,
-        },
-        {
-          id: 'saturation',
-          name: 'Oxygen saturation',
-          type: 'number',
-          unit: '%',
-          tooltip: 'Current oxygen saturation by pulse oximetry',
+          tooltip: 'Previous myocardial infarction, stroke, or peripheral artery disease',
           storable: true,
         }
       ],
-      nextStep: (inputs) => {
-        if (inputs.hypotension || inputs.acuteSOB || inputs.syncope || (inputs.saturation && inputs.saturation < 90)) {
-          return 'high-risk';
+      branches: [
+        {
+          condition: 'has-cvd',
+          evaluator: (params) => params['established-cvd'] === true,
+          nextNodeId: 'secondary-prevention',
+          label: 'Yes'
+        },
+        {
+          condition: 'no-cvd',
+          evaluator: (params) => params['established-cvd'] === false,
+          nextNodeId: 'primary-prevention',
+          label: 'No'
         }
-        return 'ecg-assessment';
-      }
+      ]
     },
-    'ecg-assessment': {
-      id: 'ecg-assessment',
-      title: 'ECG Assessment',
-      description: 'Evaluate ECG findings',
-      question: 'Are any of the following present on ECG?',
+    'secondary-prevention': {
+      id: 'secondary-prevention',
+      type: 'result',
+      content: 'Secondary Prevention',
+      description: 'Patient requires secondary prevention strategies',
+      recommendations: [
+        'High-intensity statin therapy',
+        'Blood pressure management to target <130/80 mmHg',
+        'Antiplatelet therapy',
+        'Lifestyle modifications'
+      ]
+    },
+    'primary-prevention': {
+      id: 'primary-prevention',
+      type: 'question',
+      content: 'Calculate 10-year ASCVD risk score',
       parameters: [
         {
-          id: 'stElevation',
-          name: 'ST-segment elevation',
-          type: 'boolean',
-          tooltip: 'ST-segment elevation ≥1 mm in two or more contiguous leads',
-          storable: false,
+          id: 'ascvd-risk',
+          name: 'ASCVD Risk Score',
+          type: 'number',
+          unit: '%',
+          tooltip: '10-year risk of atherosclerotic cardiovascular disease',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'low-risk',
+          evaluator: (params) => params['ascvd-risk'] < 5,
+          nextNodeId: 'low-risk',
+          label: '<5%'
         },
         {
-          id: 'stDepression',
-          name: 'ST-segment depression',
-          type: 'boolean',
-          tooltip: 'ST-segment depression ≥0.5 mm in two or more contiguous leads',
-          storable: false,
+          condition: 'borderline-risk',
+          evaluator: (params) => params['ascvd-risk'] >= 5 && params['ascvd-risk'] < 7.5,
+          nextNodeId: 'borderline-risk',
+          label: '5-7.5%'
         },
         {
-          id: 'tWaveInversion',
-          name: 'T-wave inversion',
-          type: 'boolean',
-          tooltip: 'New T-wave inversion in two or more contiguous leads',
-          storable: false,
+          condition: 'intermediate-risk',
+          evaluator: (params) => params['ascvd-risk'] >= 7.5 && params['ascvd-risk'] < 20,
+          nextNodeId: 'intermediate-risk',
+          label: '7.5-20%'
         },
         {
-          id: 'newLBBB',
-          name: 'New LBBB',
+          condition: 'high-risk',
+          evaluator: (params) => params['ascvd-risk'] >= 20,
+          nextNodeId: 'high-risk',
+          label: '≥20%'
+        }
+      ]
+    },
+    'low-risk': {
+      id: 'low-risk',
+      type: 'result',
+      content: 'Low Risk (<5%)',
+      description: 'Patient has low 10-year risk of ASCVD',
+      recommendations: [
+        'Emphasize lifestyle modifications',
+        'Consider statin only if family history of premature ASCVD or other risk-enhancing factors',
+        'Reassess in 4-6 years'
+      ]
+    },
+    'borderline-risk': {
+      id: 'borderline-risk',
+      type: 'question',
+      content: 'Are risk-enhancing factors present?',
+      description: 'Risk-enhancing factors include family history of premature ASCVD, metabolic syndrome, chronic kidney disease, etc.',
+      parameters: [
+        {
+          id: 'risk-enhancers',
+          name: 'Risk Enhancers Present',
           type: 'boolean',
-          tooltip: 'New left bundle branch block',
+          tooltip: 'Presence of risk-enhancing factors such as family history of premature ASCVD, metabolic syndrome, chronic kidney disease, etc.',
           storable: false,
         }
       ],
-      nextStep: (inputs) => {
-        if (inputs.stElevation || inputs.newLBBB) {
-          return 'stemi';
+      branches: [
+        {
+          condition: 'has-enhancers',
+          evaluator: (params) => params['risk-enhancers'] === true,
+          nextNodeId: 'borderline-with-enhancers',
+          label: 'Yes'
+        },
+        {
+          condition: 'no-enhancers',
+          evaluator: (params) => params['risk-enhancers'] === false,
+          nextNodeId: 'borderline-without-enhancers',
+          label: 'No'
         }
-        if (inputs.stDepression || inputs.tWaveInversion) {
-          return 'high-risk';
-        }
-        return 'risk-factor-assessment';
-      }
+      ]
     },
-    'risk-factor-assessment': {
-      id: 'risk-factor-assessment',
-      title: 'Risk Factor Assessment',
-      description: 'Evaluate cardiac risk factors',
-      question: 'Does the patient have any of the following risk factors?',
+    'borderline-with-enhancers': {
+      id: 'borderline-with-enhancers',
+      type: 'result',
+      content: 'Borderline Risk with Risk Enhancers',
+      description: 'Patient has borderline risk with additional risk-enhancing factors',
+      recommendations: [
+        'Consider moderate-intensity statin therapy',
+        'Emphasize lifestyle modifications',
+        'Monitor lipid levels and reassess risk in 1-2 years'
+      ]
+    },
+    'borderline-without-enhancers': {
+      id: 'borderline-without-enhancers',
+      type: 'result',
+      content: 'Borderline Risk without Risk Enhancers',
+      description: 'Patient has borderline risk without additional risk-enhancing factors',
+      recommendations: [
+        'Emphasize lifestyle modifications',
+        'Consider statin based on clinician-patient risk discussion',
+        'Reassess in 2-4 years'
+      ]
+    },
+    'intermediate-risk': {
+      id: 'intermediate-risk',
+      type: 'question',
+      content: 'Are risk-enhancing factors present or would coronary artery calcium (CAC) scoring help decision-making?',
+      parameters: [
+        {
+          id: 'risk-decision',
+          name: 'Risk Assessment Decision',
+          type: 'select',
+          options: [
+            { value: 'enhancers', label: 'Risk enhancers present' },
+            { value: 'cac', label: 'Perform CAC scoring' },
+            { value: 'neither', label: 'Neither' }
+          ],
+          tooltip: 'Decision on how to further refine risk assessment',
+          storable: false,
+        }
+      ],
+      branches: [
+        {
+          condition: 'has-enhancers',
+          evaluator: (params) => params['risk-decision'] === 'enhancers',
+          nextNodeId: 'intermediate-with-enhancers',
+          label: 'Risk enhancers present'
+        },
+        {
+          condition: 'perform-cac',
+          evaluator: (params) => params['risk-decision'] === 'cac',
+          nextNodeId: 'cac-scoring',
+          label: 'Perform CAC scoring'
+        },
+        {
+          condition: 'neither',
+          evaluator: (params) => params['risk-decision'] === 'neither',
+          nextNodeId: 'intermediate-standard',
+          label: 'Neither'
+        }
+      ]
+    },
+    'intermediate-with-enhancers': {
+      id: 'intermediate-with-enhancers',
+      type: 'result',
+      content: 'Intermediate Risk with Risk Enhancers',
+      description: 'Patient has intermediate risk with additional risk-enhancing factors',
+      recommendations: [
+        'Initiate moderate-intensity statin therapy',
+        'Emphasize lifestyle modifications',
+        'Target 30-49% LDL-C reduction',
+        'Monitor lipid levels and reassess risk annually'
+      ]
+    },
+    'intermediate-standard': {
+      id: 'intermediate-standard',
+      type: 'result',
+      content: 'Intermediate Risk',
+      description: 'Patient has intermediate risk without additional assessment',
+      recommendations: [
+        'Consider moderate-intensity statin therapy',
+        'Emphasize lifestyle modifications',
+        'Target 30-49% LDL-C reduction',
+        'Monitor lipid levels and reassess risk in 1-2 years'
+      ]
+    },
+    'cac-scoring': {
+      id: 'cac-scoring',
+      type: 'question',
+      content: 'What is the coronary artery calcium (CAC) score?',
+      parameters: [
+        {
+          id: 'cac-score',
+          name: 'CAC Score',
+          type: 'select',
+          options: [
+            { value: 'zero', label: 'CAC = 0' },
+            { value: 'low', label: 'CAC = 1-99' },
+            { value: 'high', label: 'CAC ≥ 100' }
+          ],
+          tooltip: 'Coronary artery calcium score from CT scan',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'cac-zero',
+          evaluator: (params) => params['cac-score'] === 'zero',
+          nextNodeId: 'cac-zero',
+          label: 'CAC = 0'
+        },
+        {
+          condition: 'cac-low',
+          evaluator: (params) => params['cac-score'] === 'low',
+          nextNodeId: 'cac-low',
+          label: 'CAC = 1-99'
+        },
+        {
+          condition: 'cac-high',
+          evaluator: (params) => params['cac-score'] === 'high',
+          nextNodeId: 'cac-high',
+          label: 'CAC ≥ 100'
+        }
+      ]
+    },
+    'cac-zero': {
+      id: 'cac-zero',
+      type: 'result',
+      content: 'CAC Score = 0',
+      description: 'Patient has intermediate risk but CAC score of zero',
+      recommendations: [
+        'Consider withholding statin therapy',
+        'Emphasize lifestyle modifications',
+        'Reassess in 5-7 years'
+      ]
+    },
+    'cac-low': {
+      id: 'cac-low',
+      type: 'result',
+      content: 'CAC Score = 1-99',
+      description: 'Patient has intermediate risk with low positive CAC score',
+      recommendations: [
+        'Initiate moderate-intensity statin therapy',
+        'Emphasize lifestyle modifications',
+        'Target 30-49% LDL-C reduction',
+        'Monitor lipid levels and reassess risk annually'
+      ]
+    },
+    'cac-high': {
+      id: 'cac-high',
+      type: 'result',
+      content: 'CAC Score ≥ 100',
+      description: 'Patient has intermediate risk with high CAC score',
+      recommendations: [
+        'Initiate moderate to high-intensity statin therapy',
+        'Emphasize lifestyle modifications',
+        'Target ≥50% LDL-C reduction',
+        'Consider additional risk factors and comorbidities',
+        'Monitor lipid levels and reassess risk every 6 months'
+      ]
+    },
+    'high-risk': {
+      id: 'high-risk',
+      type: 'result',
+      content: 'High Risk (≥20%)',
+      description: 'Patient has high 10-year risk of ASCVD',
+      recommendations: [
+        'Initiate high-intensity statin therapy',
+        'Emphasize lifestyle modifications',
+        'Target ≥50% LDL-C reduction',
+        'Consider additional risk factors and comorbidities',
+        'Monitor lipid levels and reassess risk every 6 months'
+      ]
+    }
+  },
+  preparationInfo: {
+    requiredParameters: ['established-cvd'],
+    potentialParameters: ['age', 'gender', 'total-cholesterol', 'hdl-cholesterol', 'systolic-bp', 'smoking-status', 'diabetes']
+  },
+  references: [
+    '2019 ACC/AHA Guideline on the Primary Prevention of Cardiovascular Disease',
+    '2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol'
+  ]
+};
+
+// Combined CV Risk Algorithm (Framingham + ESC/EAS Guidelines)
+const combinedCVRiskAlgorithm: AlgorithmDefinition = {
+  id: 'combined-cv-risk',
+  name: 'Combined CV Risk Assessment',
+  description: 'Comprehensive cardiovascular risk assessment combining Framingham risk score with European guidelines',
+  category: 'Cardiology',
+  startNodeId: 'initial-assessment',
+  nodes: {
+    'initial-assessment': {
+      id: 'initial-assessment',
+      type: 'question',
+      content: 'Does the patient have any of the following conditions?',
+      description: 'Check for conditions that automatically classify as very high risk',
+      parameters: [
+        {
+          id: 'cad',
+          name: 'Documented CAD',
+          type: 'boolean',
+          tooltip: 'Coronary artery disease (previous MI, ACS, coronary revascularization, other arterial revascularization procedures)',
+          storable: true,
+        },
+        {
+          id: 'cerebroVD',
+          name: 'Cerebrovascular Disease',
+          type: 'boolean',
+          tooltip: 'Stroke or TIA',
+          storable: true,
+        },
+        {
+          id: 'pad',
+          name: 'Peripheral Artery Disease',
+          type: 'boolean',
+          tooltip: 'Peripheral arterial disease',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'has-cvd',
+          evaluator: (params) => params['cad'] === true || params['cerebroVD'] === true || params['pad'] === true,
+          nextNodeId: 'very-high-risk',
+          label: 'Yes (Secondary Prevention)'
+        },
+        {
+          condition: 'no-cvd',
+          evaluator: (params) => params['cad'] !== true && params['cerebroVD'] !== true && params['pad'] !== true,
+          nextNodeId: 'check-diabetes',
+          label: 'No (Primary Prevention)'
+        }
+      ]
+    },
+    'check-diabetes': {
+      id: 'check-diabetes',
+      type: 'question',
+      content: 'Does the patient have diabetes?',
+      parameters: [
+        {
+          id: 'dm1',
+          name: 'Type 1 Diabetes',
+          type: 'boolean',
+          tooltip: 'Type 1 diabetes mellitus',
+          storable: true,
+        },
+        {
+          id: 'dm2',
+          name: 'Type 2 Diabetes',
+          type: 'boolean',
+          tooltip: 'Type 2 diabetes mellitus',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'has-diabetes',
+          evaluator: (params) => params['dm1'] === true || params['dm2'] === true,
+          nextNodeId: 'diabetes-assessment',
+          label: 'Yes'
+        },
+        {
+          condition: 'no-diabetes',
+          evaluator: (params) => params['dm1'] !== true && params['dm2'] !== true,
+          nextNodeId: 'check-severe-conditions',
+          label: 'No'
+        }
+      ]
+    },
+    'diabetes-assessment': {
+      id: 'diabetes-assessment',
+      type: 'question',
+      content: 'Diabetes risk assessment',
+      description: 'Check for diabetes-related risk factors',
+      parameters: [
+        {
+          id: 'albuminuria',
+          name: 'Albuminuria',
+          type: 'boolean',
+          tooltip: 'Presence of albuminuria',
+          storable: true,
+        },
+        {
+          id: 'smoking',
+          name: 'Current Smoker',
+          type: 'boolean',
+          tooltip: 'Currently smokes tobacco',
+          storable: true,
+        },
+        {
+          id: 'knownHPT',
+          name: 'Hypertension',
+          type: 'boolean',
+          tooltip: 'Diagnosed hypertension or on antihypertensive medication',
+          storable: true,
+        },
+        {
+          id: 'knownDLP',
+          name: 'Dyslipidemia',
+          type: 'boolean',
+          tooltip: 'Diagnosed dyslipidemia or on lipid-lowering medication',
+          storable: true,
+        },
+        {
+          id: 'age',
+          name: 'Age',
+          type: 'number',
+          unit: 'years',
+          tooltip: 'Patient age in years',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'dm1-with-albuminuria',
+          evaluator: (params) => params['dm1'] === true && params['albuminuria'] === true,
+          nextNodeId: 'very-high-risk',
+          label: 'T1DM with albuminuria'
+        },
+        {
+          condition: 'dm2-with-risk-factors',
+          evaluator: (params) => params['dm2'] === true && (params['smoking'] === true || params['knownHPT'] === true || params['knownDLP'] === true || (params['age'] !== undefined && params['age'] > 40)),
+          nextNodeId: 'high-risk',
+          label: 'T2DM with risk factors'
+        },
+        {
+          condition: 'other-diabetes',
+          evaluator: (params) => true, // Default branch for other diabetes cases
+          nextNodeId: 'framingham-calculation',
+          label: 'Other diabetes cases'
+        }
+      ]
+    },
+    'check-severe-conditions': {
+      id: 'check-severe-conditions',
+      type: 'question',
+      content: 'Does the patient have any of these severe conditions?',
+      parameters: [
+        {
+          id: 'tcOver7_5',
+          name: 'TC > 7.5 mmol/L',
+          type: 'boolean',
+          tooltip: 'Total cholesterol > 7.5 mmol/L (290 mg/dL)',
+          storable: true,
+        },
+        {
+          id: 'ldlOver5_0',
+          name: 'LDL-C > 5.0 mmol/L',
+          type: 'boolean',
+          tooltip: 'LDL cholesterol > 5.0 mmol/L (190 mg/dL)',
+          storable: true,
+        },
+        {
+          id: 'egfr',
+          name: 'eGFR',
+          type: 'number',
+          unit: 'mL/min/1.73m²',
+          tooltip: 'Estimated glomerular filtration rate',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'severe-dyslipidemia',
+          evaluator: (params) => params['tcOver7_5'] === true || params['ldlOver5_0'] === true,
+          nextNodeId: 'high-risk',
+          label: 'Severe dyslipidemia'
+        },
+        {
+          condition: 'severe-ckd',
+          evaluator: (params) => params['egfr'] !== undefined && params['egfr'] < 30,
+          nextNodeId: 'very-high-risk',
+          label: 'Severe CKD (eGFR < 30)'
+        },
+        {
+          condition: 'moderate-ckd',
+          evaluator: (params) => params['egfr'] !== undefined && params['egfr'] >= 30 && params['egfr'] < 60,
+          nextNodeId: 'high-risk',
+          label: 'Moderate CKD (eGFR 30-59)'
+        },
+        {
+          condition: 'no-severe-conditions',
+          evaluator: (params) => true, // Default branch
+          nextNodeId: 'check-subclinical-atherosclerosis',
+          label: 'None of these conditions'
+        }
+      ]
+    },
+    'check-subclinical-atherosclerosis': {
+      id: 'check-subclinical-atherosclerosis',
+      type: 'question',
+      content: 'Is there evidence of subclinical atherosclerosis?',
+      parameters: [
+        {
+          id: 'coronaryAtheroma',
+          name: 'Coronary Atheroma',
+          type: 'boolean',
+          tooltip: 'Significant coronary atheroma on imaging',
+          storable: true,
+        },
+        {
+          id: 'carotidAtheroma',
+          name: 'Carotid Atheroma',
+          type: 'boolean',
+          tooltip: 'Significant carotid atheroma on imaging',
+          storable: true,
+        },
+        {
+          id: 'lowerLimbAtheroma',
+          name: 'Lower Limb Atheroma',
+          type: 'boolean',
+          tooltip: 'Significant lower limb atheroma on imaging',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'has-atherosclerosis',
+          evaluator: (params) => params['coronaryAtheroma'] === true || params['carotidAtheroma'] === true || params['lowerLimbAtheroma'] === true,
+          nextNodeId: 'high-risk',
+          label: 'Evidence of atherosclerosis'
+        },
+        {
+          condition: 'no-atherosclerosis',
+          evaluator: (params) => params['coronaryAtheroma'] !== true && params['carotidAtheroma'] !== true && params['lowerLimbAtheroma'] !== true,
+          nextNodeId: 'framingham-calculation',
+          label: 'No evidence of atherosclerosis'
+        }
+      ]
+    },
+    'framingham-calculation': {
+      id: 'framingham-calculation',
+      type: 'question',
+      content: 'Calculate Framingham Risk Score',
+      description: 'Enter parameters to calculate 10-year cardiovascular risk',
       parameters: [
         {
           id: 'age',
           name: 'Age',
           type: 'number',
           unit: 'years',
-          tooltip: 'Patient\'s age in years',
+          tooltip: 'Patient age in years',
           storable: true,
         },
         {
-          id: 'diabetes',
-          name: 'Diabetes',
-          type: 'boolean',
-          tooltip: 'Diagnosed diabetes mellitus',
-          storable: true,
-        },
-        {
-          id: 'cad',
-          name: 'Known CAD',
-          type: 'boolean',
-          tooltip: 'Known coronary artery disease or prior MI',
-          storable: true,
-        },
-        {
-          id: 'multipleRiskFactors',
-          name: '≥3 cardiac risk factors',
-          type: 'boolean',
-          tooltip: 'Hypertension, hyperlipidemia, smoking, family history, etc.',
-          storable: false,
-        },
-        {
-          id: 'aspirin',
-          name: 'Aspirin use in last 7 days',
-          type: 'boolean',
-          tooltip: 'Patient has been taking aspirin regularly in the past week',
-          storable: true,
-        }
-      ],
-      nextStep: (inputs) => {
-        let riskPoints = 0;
-        if (inputs.age >= 65) riskPoints += 1;
-        if (inputs.diabetes) riskPoints += 1;
-        if (inputs.cad) riskPoints += 1;
-        if (inputs.multipleRiskFactors) riskPoints += 1;
-        if (!inputs.aspirin) riskPoints += 1;
-        
-        if (riskPoints >= 3) {
-          return 'intermediate-risk';
-        }
-        return 'symptom-assessment';
-      }
-    },
-    'symptom-assessment': {
-      id: 'symptom-assessment',
-      title: 'Symptom Assessment',
-      description: 'Evaluate chest pain characteristics',
-      question: 'Characterize the chest pain:',
-      parameters: [
-        {
-          id: 'painCharacter',
-          name: 'Pain character',
+          id: 'gender',
+          name: 'Gender',
           type: 'select',
           options: [
-            { value: 'pressure', label: 'Pressure/squeezing' },
-            { value: 'sharp', label: 'Sharp/stabbing' },
-            { value: 'burning', label: 'Burning' },
-            { value: 'dull', label: 'Dull ache' }
+            { value: 'male', label: 'Male' },
+            { value: 'female', label: 'Female' }
           ],
-          tooltip: 'The quality of the chest pain',
-          storable: false,
+          tooltip: 'Patient gender',
+          storable: true,
         },
         {
-          id: 'painRadiation',
-          name: 'Pain radiation',
-          type: 'boolean',
-          tooltip: 'Pain radiates to jaw, neck, arms, or back',
-          storable: false,
+          id: 'totalCholesterol',
+          name: 'Total Cholesterol',
+          type: 'number',
+          unit: 'mmol/L',
+          tooltip: 'Total cholesterol level',
+          storable: true,
         },
         {
-          id: 'exertional',
-          name: 'Exertional',
-          type: 'boolean',
-          tooltip: 'Pain occurs or worsens with exertion',
-          storable: false,
+          id: 'hdlCholesterol',
+          name: 'HDL Cholesterol',
+          type: 'number',
+          unit: 'mmol/L',
+          tooltip: 'HDL cholesterol level',
+          storable: true,
         },
         {
-          id: 'similarPrior',
-          name: 'Similar to prior cardiac event',
+          id: 'systolicBP',
+          name: 'Systolic BP',
+          type: 'number',
+          unit: 'mmHg',
+          tooltip: 'Systolic blood pressure',
+          storable: true,
+        },
+        {
+          id: 'onHypertensionTreatment',
+          name: 'On Hypertension Treatment',
           type: 'boolean',
-          tooltip: 'Pain is similar to previous confirmed cardiac event',
-          storable: false,
+          tooltip: 'Currently on medication for hypertension',
+          storable: true,
+        },
+        {
+          id: 'smoker',
+          name: 'Current Smoker',
+          type: 'boolean',
+          tooltip: 'Currently smokes tobacco',
+          storable: true,
         }
       ],
-      nextStep: (inputs) => {
-        if (
-          inputs.painCharacter === 'pressure' || 
-          inputs.painRadiation || 
-          inputs.exertional || 
-          inputs.similarPrior
-        ) {
-          return 'intermediate-risk';
+      branches: [
+        {
+          condition: 'calculate',
+          evaluator: (params) => true,
+          nextNodeId: 'framingham-result',
+          label: 'Calculate Risk'
         }
-        return 'low-risk';
-      }
-    }
-  },
-  results: {
-    'stemi': {
-      title: 'STEMI Pathway',
-      description: 'ST-Elevation Myocardial Infarction identified',
-      recommendation: 'Immediate cardiology consultation for primary PCI. Administer aspirin, consider P2Y12 inhibitor, and prepare for cardiac catheterization.',
-      severity: 'very-high',
-      additionalData: {
-        timeTarget: 'Door-to-balloon time <90 minutes',
-        medications: ['Aspirin 325mg', 'P2Y12 inhibitor (e.g., ticagrelor)', 'Anticoagulation']
-      }
+      ]
+    },
+    'framingham-result': {
+      id: 'framingham-result',
+      type: 'question',
+      content: 'Framingham Risk Score Result',
+      description: 'Based on the calculated risk score, determine risk category',
+      parameters: [
+        {
+          id: 'framinghamRisk',
+          name: 'Framingham Risk',
+          type: 'number',
+          unit: '%',
+          tooltip: '10-year risk of cardiovascular disease',
+          storable: true,
+        },
+        {
+          id: 'currentLDL',
+          name: 'Current LDL-C',
+          type: 'number',
+          unit: 'mmol/L',
+          tooltip: 'Current LDL cholesterol level',
+          storable: true,
+        }
+      ],
+      branches: [
+        {
+          condition: 'low-risk',
+          evaluator: (params) => params['framinghamRisk'] < 5,
+          nextNodeId: 'low-risk-treatment',
+          label: 'Low Risk (<5%)'
+        },
+        {
+          condition: 'moderate-risk',
+          evaluator: (params) => params['framinghamRisk'] >= 5 && params['framinghamRisk'] < 15,
+          nextNodeId: 'moderate-risk-treatment',
+          label: 'Moderate Risk (5-15%)'
+        },
+        {
+          condition: 'high-risk',
+          evaluator: (params) => params['framinghamRisk'] >= 15,
+          nextNodeId: 'high-risk-treatment',
+          label: 'High Risk (≥15%)'
+        }
+      ]
+    },
+    'very-high-risk': {
+      id: 'very-high-risk',
+      type: 'result',
+      content: 'Very High Risk',
+      description: 'Patient is at very high cardiovascular risk',
+      recommendations: [
+        'LDL-C target: <1.4 mmol/L (<55 mg/dL) and ≥50% reduction from baseline',
+        'High-intensity statin therapy (e.g., atorvastatin 40-80 mg or rosuvastatin 20-40 mg)',
+        'Consider combination therapy if target not achieved with maximum tolerated statin',
+        'Aggressive management of all risk factors',
+        'Consider antiplatelet therapy for secondary prevention'
+      ]
     },
     'high-risk': {
-      title: 'High-Risk ACS Pathway',
-      description: 'High-risk features for Acute Coronary Syndrome',
-      recommendation: 'Urgent cardiology consultation, serial troponins, and admission to cardiac monitoring unit. Consider early invasive strategy.',
-      severity: 'high',
-      additionalData: {
-        monitoring: 'Continuous cardiac monitoring',
-        labTests: ['Serial troponins q3h', 'BMP', 'CBC'],
-        medications: ['Aspirin', 'Anticoagulation', 'Consider P2Y12 inhibitor']
-      }
+      id: 'high-risk',
+      type: 'result',
+      content: 'High Risk',
+      description: 'Patient is at high cardiovascular risk',
+      recommendations: [
+        'LDL-C target: <1.8 mmol/L (<70 mg/dL) and ≥50% reduction from baseline',
+        'High-intensity statin therapy (e.g., atorvastatin 20-40 mg or rosuvastatin 10-20 mg)',
+        'Consider combination therapy if target not achieved with maximum tolerated statin',
+        'Aggressive management of all risk factors'
+      ]
     },
-    'intermediate-risk': {
-      title: 'Intermediate-Risk Pathway',
-      description: 'Intermediate risk for Acute Coronary Syndrome',
-      recommendation: 'Serial troponins, consider observation unit admission, and non-invasive cardiac testing within 24-72 hours if troponins negative.',
-      severity: 'moderate',
-      additionalData: {
-        disposition: 'Observation unit or short-stay unit',
-        testing: 'Consider stress test or CCTA if troponins negative',
-        followUp: 'Cardiology follow-up within 1 week if discharged'
-      }
+    'low-risk-treatment': {
+      id: 'low-risk-treatment',
+      type: 'result',
+      content: 'Low Risk Treatment Recommendations',
+      description: 'Treatment recommendations for low-risk patients',
+      recommendations: [
+        'LDL-C target: <3.0 mmol/L (<116 mg/dL)',
+        'Lifestyle modifications as primary intervention',
+        'Consider statin therapy only if LDL-C remains >3.0 mmol/L despite lifestyle changes',
+        'Reassess cardiovascular risk in 5 years'
+      ]
     },
-    'low-risk': {
-      title: 'Low-Risk Pathway',
-      description: 'Low risk for Acute Coronary Syndrome',
-      recommendation: 'Consider single troponin, non-cardiac causes of chest pain, and possible discharge with outpatient follow-up if appropriate.',
-      severity: 'low',
-      additionalData: {
-        considerations: 'Consider non-cardiac causes: GERD, musculoskeletal, anxiety',
-        testing: 'Consider outpatient testing if indicated',
-        followUp: 'Primary care follow-up within 1-2 weeks'
-      }
-    }
-  }
-};
-
-// Example algorithm: Stroke Workup
-export const strokeWorkupAlgorithm: AlgorithmDefinition = {
-  id: 'stroke-workup',
-  name: 'Acute Stroke Workup Algorithm',
-  description: 'Guides the initial assessment and management of patients with suspected acute stroke',
-  category: 'Neurology',
-  initialStep: 'time-assessment',
-  steps: {
-    'time-assessment': {
-      id: 'time-assessment',
-      title: 'Time Assessment',
-      description: 'Determine time of symptom onset',
-      question: 'When did the symptoms begin?',
-      parameters: [
-        {
-          id: 'lastKnownWell',
-          name: 'Last known well time',
-          type: 'select',
-          options: [
-            { value: 'less-than-4.5', label: 'Less than 4.5 hours ago' },
-            { value: '4.5-to-24', label: 'Between 4.5 and 24 hours ago' },
-            { value: 'more-than-24', label: 'More than 24 hours ago' },
-            { value: 'unknown', label: 'Unknown time of onset' },
-            { value: 'wake-up', label: 'Wake-up stroke (symptoms present upon awakening)' }
-          ],
-          tooltip: 'Time since patient was last known to be at neurological baseline',
-          storable: false,
-        }
-      ],
-      nextStep: (inputs) => {
-        if (inputs.lastKnownWell === 'less-than-4.5') {
-          return 'initial-assessment';
-        } else if (inputs.lastKnownWell === '4.5-to-24' || inputs.lastKnownWell === 'wake-up') {
-          return 'thrombectomy-assessment';
-        } else {
-          return 'beyond-window';
-        }
-      }
+    'moderate-risk-treatment': {
+      id: 'moderate-risk-treatment',
+      type: 'result',
+      content: 'Moderate Risk Treatment Recommendations',
+      description: 'Treatment recommendations for moderate-risk patients',
+      recommendations: [
+        'LDL-C target: <2.6 mmol/L (<100 mg/dL)',
+        'Lifestyle modifications as primary intervention',
+        'Consider moderate-intensity statin therapy if LDL-C remains >2.6 mmol/L despite lifestyle changes',
+        'Reassess cardiovascular risk in 2 years'
+      ]
     },
-    'initial-assessment': {
-      id: 'initial-assessment',
-      title: 'Initial Assessment',
-      description: 'Assess for tPA eligibility',
-      question: 'Does the patient have any absolute contraindications to tPA?',
-      parameters: [
-        {
-          id: 'intracranialHemorrhage',
-          name: 'Known or suspected intracranial hemorrhage',
-          type: 'boolean',
-          tooltip: 'Any evidence of intracranial bleeding on imaging',
-          storable: false,
-        },
-        {
-          id: 'recentSurgery',
-          name: 'Major surgery within 14 days',
-          type: 'boolean',
-          tooltip: 'Any major surgical procedure within the past 14 days',
-          storable: false,
-        },
-        {
-          id: 'recentStroke',
-          name: 'Stroke or serious head trauma within 3 months',
-          type: 'boolean',
-          tooltip: 'Previous stroke or serious head injury within the past 3 months',
-          storable: false,
-        },
-        {
-          id: 'activeBleeding',
-          name: 'Active internal bleeding',
-          type: 'boolean',
-          tooltip: 'Current internal bleeding (e.g., GI bleed, hematuria)',
-          storable: false,
-        },
-        {
-          id: 'platelets',
-          name: 'Platelet count',
-          type: 'number',
-          unit: 'K/μL',
-          tooltip: 'Current platelet count',
-          storable: true,
-        },
-        {
-          id: 'inr',
-          name: 'INR',
-          type: 'number',
-          tooltip: 'Current International Normalized Ratio',
-          storable: true,
-        }
-      ],
-      nextStep: (inputs) => {
-        if (
-          inputs.intracranialHemorrhage || 
-          inputs.recentSurgery || 
-          inputs.recentStroke || 
-          inputs.activeBleeding ||
-          (inputs.platelets && inputs.platelets < 100) ||
-          (inputs.inr && inputs.inr > 1.7)
-        ) {
-          return 'tpa-contraindicated';
-        }
-        return 'nihss-assessment';
-      }
-    },
-    'nihss-assessment': {
-      id: 'nihss-assessment',
-      title: 'Stroke Severity Assessment',
-      description: 'Assess stroke severity using NIHSS',
-      question: 'What is the patient\'s NIHSS score?',
-      parameters: [
-        {
-          id: 'nihssScore',
-          name: 'NIHSS Score',
-          type: 'number',
-          tooltip: 'National Institutes of Health Stroke Scale score (0-42)',
-          storable: false,
-        }
-      ],
-      nextStep: (inputs) => {
-        if (inputs.nihssScore >= 6) {
-          return 'lvo-assessment';
-        }
-        return 'tpa-eligible';
-      }
-    },
-    'lvo-assessment': {
-      id: 'lvo-assessment',
-      title: 'Large Vessel Occlusion Assessment',
-      description: 'Assess for large vessel occlusion',
-      question: 'Is there evidence of large vessel occlusion on CTA?',
-      parameters: [
-        {
-          id: 'lvoPresent',
-          name: 'Large vessel occlusion present',
-          type: 'boolean',
-          tooltip: 'Occlusion of internal carotid artery, M1, or basilar artery',
-          storable: false,
-        }
-      ],
-      nextStep: (inputs) => {
-        if (inputs.lvoPresent) {
-          return 'thrombectomy-candidate';
-        }
-        return 'tpa-eligible';
-      }
-    },
-    'thrombectomy-assessment': {
-      id: 'thrombectomy-assessment',
-      title: 'Extended Window Assessment',
-      description: 'Assess for thrombectomy eligibility in extended time window',
-      question: 'Is there evidence of salvageable tissue on advanced imaging?',
-      parameters: [
-        {
-          id: 'lvoPresent',
-          name: 'Large vessel occlusion present',
-          type: 'boolean',
-          tooltip: 'Occlusion of internal carotid artery, M1, or basilar artery',
-          storable: false,
-        },
-        {
-          id: 'infarctCore',
-          name: 'Infarct core volume',
-          type: 'number',
-          unit: 'mL',
-          tooltip: 'Volume of irreversibly damaged brain tissue',
-          storable: false,
-        },
-        {
-          id: 'mismatchRatio',
-          name: 'Mismatch ratio',
-          type: 'number',
-          tooltip: 'Ratio of perfusion deficit to infarct core',
-          storable: false,
-        }
-      ],
-      nextStep: (inputs) => {
-        if (inputs.lvoPresent && inputs.infarctCore < 70 && inputs.mismatchRatio > 1.8) {
-          return 'extended-thrombectomy';
-        }
-        return 'beyond-window';
-      }
+    'high-risk-treatment': {
+      id: 'high-risk-treatment',
+      type: 'result',
+      content: 'High Risk Treatment Recommendations (Framingham)',
+      description: 'Treatment recommendations for high-risk patients based on Framingham score',
+      recommendations: [
+        'LDL-C target: <1.8 mmol/L (<70 mg/dL)',
+        'Moderate to high-intensity statin therapy',
+        'Aggressive lifestyle modifications',
+        'Consider combination therapy if target not achieved with maximum tolerated statin',
+        'Manage all modifiable risk factors',
+        'Reassess cardiovascular risk annually'
+      ]
     }
   },
-  results: {
-    'tpa-eligible': {
-      title: 'tPA Eligible',
-      description: 'Patient is eligible for intravenous thrombolysis',
-      recommendation: 'Administer IV tPA at 0.9 mg/kg (max 90 mg) with 10% as bolus and remainder over 60 minutes. Monitor in ICU or stroke unit.',
-      severity: 'high',
-      additionalData: {
-        timeTarget: 'Door-to-needle time <60 minutes',
-        monitoring: 'Frequent neurological checks, BP control <180/105 mmHg',
-        followUp: 'Repeat brain imaging at 24 hours before starting antithrombotics'
-      }
-    },
-    'thrombectomy-candidate': {
-      title: 'Thrombectomy Candidate',
-      description: 'Patient is eligible for mechanical thrombectomy',
-      recommendation: 'Administer IV tPA if eligible, and arrange immediate transfer to thrombectomy-capable center if not already at one.',
-      severity: 'very-high',
-      additionalData: {
-        timeTarget: 'Door-to-groin puncture <90 minutes',
-        transfer: 'If transfer needed, initiate immediately with direct communication to receiving neurointerventionalist',
-        followUp: 'Post-procedure ICU monitoring'
-      }
-    },
-    'extended-thrombectomy': {
-      title: 'Extended Window Thrombectomy',
-      description: 'Patient is eligible for thrombectomy in extended time window',
-      recommendation: 'Arrange immediate transfer to thrombectomy-capable center if not already at one.',
-      severity: 'high',
-      additionalData: {
-        timeWindow: 'Treatment up to 24 hours from last known well',
-        imaging: 'Based on favorable advanced imaging (small core, large penumbra)',
-        followUp: 'Post-procedure ICU monitoring'
-      }
-    },
-    'tpa-contraindicated': {
-      title: 'tPA Contraindicated',
-      description: 'Patient has contraindications to intravenous thrombolysis',
-      recommendation: 'Assess for thrombectomy eligibility if large vessel occlusion present. Otherwise, provide supportive care and secondary prevention.',
-      severity: 'moderate',
-      additionalData: {
-        alternatives: 'Consider thrombectomy if LVO present',
-        care: 'Admit to stroke unit for monitoring and supportive care',
-        prevention: 'Initiate appropriate antithrombotics after 24 hours if no hemorrhage'
-      }
-    },
-    'beyond-window': {
-      title: 'Beyond Treatment Window',
-      description: 'Patient is beyond established treatment windows',
-      recommendation: 'Provide supportive care, secondary stroke prevention, and rehabilitation assessment.',
-      severity: 'low',
-      additionalData: {
-        care: 'Admit to stroke unit for monitoring and supportive care',
-        workup: 'Complete stroke etiology workup',
-        prevention: 'Initiate appropriate secondary prevention measures'
-      }
-    }
-  }
+  preparationInfo: {
+    requiredParameters: ['age', 'gender'],
+    potentialParameters: [
+      'totalCholesterol', 'hdlCholesterol', 'systolicBP', 'onHypertensionTreatment', 
+      'smoker', 'cad', 'cerebroVD', 'pad', 'dm1', 'dm2', 'egfr', 'currentLDL'
+    ]
+  },
+  references: [
+    '2019 ESC/EAS Guidelines for the management of dyslipidaemias',
+    '2019 ACC/AHA Guideline on the Primary Prevention of Cardiovascular Disease',
+    'Framingham Heart Study Risk Score Calculator'
+  ]
 };
 
-// List of all available algorithms
+// Export the algorithms
 export const algorithms: AlgorithmDefinition[] = [
-  chestPainAlgorithm,
-  strokeWorkupAlgorithm,
-  // Add more algorithms here as they are implemented
+  cvRiskAlgorithm,
+  combinedCVRiskAlgorithm
 ];
 
 // Helper function to get an algorithm by ID

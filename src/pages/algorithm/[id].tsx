@@ -1,42 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getAlgorithmById } from "@/lib/algorithm-definitions";
-import { useParameterStore } from "@/lib/parameter-store";
 import { Header } from "@/components/layout/Header";
 import { StoredParametersList } from "@/components/parameters/StoredParametersList";
-import { AlgorithmStep } from "@/components/algorithms/AlgorithmStep";
-import { AlgorithmResult } from "@/components/algorithms/AlgorithmResult";
-import { AlgorithmVisualizer } from "@/components/algorithms/AlgorithmVisualizer";
+import { AlgorithmNavigator } from "@/components/algorithms/AlgorithmNavigator";
+import { AlgorithmFlowchart } from "@/components/algorithms/AlgorithmFlowchart";
+import { AlgorithmResults } from "@/components/algorithms/AlgorithmResults";
+import { AlgorithmPreparation } from "@/components/algorithms/AlgorithmPreparation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, GitBranch, ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowLeft, GitBranch } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { AlgorithmNode } from "@/lib/algorithm-definitions";
 
 export default function AlgorithmPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { parameters, getParameterValue } = useParameterStore();
   
   const algorithm = id ? getAlgorithmById(id) : undefined;
   
-  const [currentStepId, setCurrentStepId] = useState<string>("");
-  const [pathHistory, setPathHistory] = useState<Array<{
-    stepId: string;
-    stepTitle: string;
+  const [activeTab, setActiveTab] = useState<"preparation" | "algorithm" | "results">("preparation");
+  const [algorithmStarted, setAlgorithmStarted] = useState(false);
+  const [algorithmCompleted, setAlgorithmCompleted] = useState(false);
+  const [result, setResult] = useState<{
+    path: string[];
     inputs: Record<string, any>;
-    parameterLabels: Record<string, string>;
-  }>>([]);
-  const [result, setResult] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"algorithm" | "visualization">("algorithm");
+    finalNode: AlgorithmNode;
+  } | null>(null);
   
-  // Initialize with the first step
-  useEffect(() => {
-    if (algorithm) {
-      setCurrentStepId(algorithm.initialStep);
-      setPathHistory([]);
-      setResult(null);
-    }
-  }, [algorithm]);
+  const handleStartAlgorithm = () => {
+    setAlgorithmStarted(true);
+    setActiveTab("algorithm");
+  };
+  
+  const handleAlgorithmComplete = (result: {
+    path: string[];
+    inputs: Record<string, any>;
+    finalNode: AlgorithmNode;
+  }) => {
+    setResult(result);
+    setAlgorithmCompleted(true);
+    setActiveTab("results");
+  };
   
   if (!algorithm) {
     return (
@@ -55,57 +59,7 @@ export default function AlgorithmPage() {
       </div>
     );
   }
-  
-  const currentStep = algorithm.steps[currentStepId];
-  
-  // Create a mapping of parameter IDs to their display names for the current step
-  const parameterLabels: Record<string, string> = {};
-  currentStep?.parameters.forEach(param => {
-    parameterLabels[param.id] = param.name;
-  });
-  
-  const handleStepComplete = (inputs: Record<string, any>) => {
-    // Add current step to path history
-    setPathHistory(prev => [
-      ...prev,
-      {
-        stepId: currentStepId,
-        stepTitle: currentStep.title,
-        inputs,
-        parameterLabels: { ...parameterLabels }
-      }
-    ]);
-    
-    // Determine next step
-    const nextStepId = currentStep.nextStep(inputs);
-    
-    if (nextStepId === null) {
-      // End of algorithm reached without a specific result
-      setResult({
-        title: "Algorithm Complete",
-        description: "The algorithm has been completed without a specific recommendation.",
-        recommendation: "Please use clinical judgment for further management.",
-        severity: "moderate"
-      });
-    } else if (algorithm.steps[nextStepId]) {
-      // Move to next step
-      setCurrentStepId(nextStepId);
-    } else if (algorithm.results[nextStepId]) {
-      // Show result
-      setResult(algorithm.results[nextStepId]);
-    } else {
-      // Invalid next step
-      console.error(`Invalid next step ID: ${nextStepId}`);
-    }
-  };
-  
-  const handleReset = () => {
-    setCurrentStepId(algorithm.initialStep);
-    setPathHistory([]);
-    setResult(null);
-    setActiveTab("algorithm");
-  };
-  
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -135,112 +89,55 @@ export default function AlgorithmPage() {
               </div>
             </div>
             
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "algorithm" | "visualization")}>
-              <div className="flex justify-between items-center mb-4">
-                <TabsList>
-                  <TabsTrigger value="algorithm">Algorithm</TabsTrigger>
-                  <TabsTrigger value="visualization">Visualization</TabsTrigger>
-                </TabsList>
-                
-                {(pathHistory.length > 0 || result) && (
-                  <Button variant="outline" onClick={handleReset}>
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset Algorithm
-                  </Button>
-                )}
-              </div>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="preparation">Preparation</TabsTrigger>
+                <TabsTrigger value="algorithm" disabled={!algorithmStarted}>Algorithm</TabsTrigger>
+                <TabsTrigger value="results" disabled={!algorithmCompleted}>Results</TabsTrigger>
+              </TabsList>
               
-              <TabsContent value="algorithm" className="mt-2">
-                {result ? (
-                  <AlgorithmResult 
-                    algorithmName={algorithm.name}
-                    result={result}
-                    pathHistory={pathHistory}
-                  />
-                ) : currentStep ? (
-                  <AlgorithmStep 
-                    step={currentStep}
-                    onComplete={handleStepComplete}
-                  />
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Error</CardTitle>
-                      <CardDescription>
-                        Could not find the current step in the algorithm.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p>There was an error processing the algorithm. Please try again.</p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button onClick={handleReset}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Reset Algorithm
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                )}
-                
-                {pathHistory.length > 0 && !result && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-2">Decision Path</h3>
-                    <div className="border rounded-md p-4">
-                      <ol className="space-y-4">
-                        {pathHistory.map((step, index) => (
-                          <li key={index} className="flex items-start">
-                            <div className="flex-shrink-0 bg-primary/10 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-0.5">
-                              <span className="text-xs font-medium">{index + 1}</span>
-                            </div>
-                            <div>
-                              <h4 className="font-medium">{step.stepTitle}</h4>
-                              <ul className="mt-1 space-y-1">
-                                {Object.entries(step.inputs).map(([key, value]) => {
-                                  const label = step.parameterLabels[key] || key;
-                                  const displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
-                                  return (
-                                    <li key={key} className="text-sm text-muted-foreground">
-                                      {label}: <span className="font-medium text-foreground">{displayValue}</span>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            </div>
-                          </li>
-                        ))}
-                        {!result && (
-                          <li className="flex items-start">
-                            <div className="flex-shrink-0 bg-primary rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-0.5">
-                              <span className="text-xs font-medium text-primary-foreground">{pathHistory.length + 1}</span>
-                            </div>
-                            <div>
-                              <h4 className="font-medium">{currentStep?.title}</h4>
-                              <p className="text-sm text-muted-foreground">Current step</p>
-                            </div>
-                          </li>
-                        )}
-                      </ol>
-                    </div>
-                  </div>
-                )}
+              <TabsContent value="preparation" className="mt-6">
+                <AlgorithmPreparation 
+                  algorithm={algorithm}
+                  onStart={handleStartAlgorithm}
+                />
               </TabsContent>
               
-              <TabsContent value="visualization" className="mt-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Algorithm Visualization</CardTitle>
-                    <CardDescription>
-                      Visual representation of the algorithm flow
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <AlgorithmVisualizer 
+              <TabsContent value="algorithm" className="mt-6">
+                <AlgorithmNavigator 
+                  algorithm={algorithm}
+                  onComplete={handleAlgorithmComplete}
+                />
+              </TabsContent>
+              
+              <TabsContent value="results" className="mt-6">
+                {result && (
+                  <>
+                    <AlgorithmResults
                       algorithm={algorithm}
-                      currentStepId={currentStepId}
-                      pathHistory={pathHistory.map(step => step.stepId)}
+                      path={result.path}
+                      inputs={result.inputs}
+                      finalNode={result.finalNode}
                     />
-                  </CardContent>
-                </Card>
+                    
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-2">Algorithm Visualization</h3>
+                      <AlgorithmFlowchart 
+                        algorithm={algorithm}
+                        path={result.path}
+                      />
+                    </div>
+                    
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-2">References</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                        {algorithm.references.map((reference, index) => (
+                          <li key={index}>{reference}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
               </TabsContent>
             </Tabs>
           </div>
