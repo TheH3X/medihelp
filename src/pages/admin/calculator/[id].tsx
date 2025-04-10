@@ -17,6 +17,7 @@ import { ArrowLeft, Plus, Trash2, Save, Eye, Edit, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useParameterStore } from "@/lib/parameter-store";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 function CalculatorEditor() {
   const { id } = useParams<{ id: string }>();
@@ -44,49 +45,26 @@ function CalculatorEditor() {
   
   const [activeTab, setActiveTab] = useState("basic");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isAddingParameter, setIsAddingParameter] = useState(false);
-  const [isEditingParameter, setIsEditingParameter] = useState(false);
-  const [editingParameterIndex, setEditingParameterIndex] = useState<number | null>(null);
-  const [isAddingQuestion, setIsAddingQuestion] = useState(false);
-  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
-  const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
-  const [isAddingRange, setIsAddingRange] = useState(false);
-  const [isEditingRange, setIsEditingRange] = useState(false);
-  const [editingRangeIndex, setEditingRangeIndex] = useState<number | null>(null);
-  const [isAddingReference, setIsAddingReference] = useState(false);
-  const [isEditingReference, setIsEditingReference] = useState(false);
-  const [editingReferenceIndex, setEditingReferenceIndex] = useState<number | null>(null);
+  const [newParameterId, setNewParameterId] = useState("");
+  const [newParameterName, setNewParameterName] = useState("");
+  const [newParameterType, setNewParameterType] = useState<"number" | "select" | "boolean">("number");
+  const [newParameterUnit, setNewParameterUnit] = useState("");
+  const [newParameterTooltip, setNewParameterTooltip] = useState("");
+  const [newParameterStorable, setNewParameterStorable] = useState(false);
+  const [newParameterOptions, setNewParameterOptions] = useState<{ value: string | number; label: string }[]>([]);
   
-  const [newParameter, setNewParameter] = useState<ParameterDefinition>({
-    id: "",
-    name: "",
-    type: "number",
-    tooltip: "",
-    storable: false,
-  });
+  const [newQuestionId, setNewQuestionId] = useState("");
+  const [newQuestionText, setNewQuestionText] = useState("");
+  const [newQuestionEliminates, setNewQuestionEliminates] = useState(false);
+  const [newQuestionEliminationMessage, setNewQuestionEliminationMessage] = useState("");
   
-  const [newQuestion, setNewQuestion] = useState<ScreeningQuestion>({
-    id: "",
-    question: "",
-    type: "boolean",
-    eliminates: false,
-    eliminationMessage: "",
-  });
-  
-  // Fix: Make severity optional in the type to match the calculator definition
-  const [newRange, setNewRange] = useState<{
-    min: number;
-    max: number;
-    interpretation: string;
-    severity: string;
-  }>({
-    min: 0,
-    max: 0,
-    interpretation: "",
-    severity: "low",
-  });
+  const [newRangeMin, setNewRangeMin] = useState(0);
+  const [newRangeMax, setNewRangeMax] = useState(0);
+  const [newRangeInterpretation, setNewRangeInterpretation] = useState("");
+  const [newRangeSeverity, setNewRangeSeverity] = useState<string>("low");
   
   const [newReference, setNewReference] = useState("");
+  const [editingReferenceIndex, setEditingReferenceIndex] = useState<number | null>(null);
   
   // Load calculator data if editing an existing one
   useEffect(() => {
@@ -105,13 +83,28 @@ function CalculatorEditor() {
   
   const handleAddParameter = () => {
     // Validate
-    if (!newParameter.id || !newParameter.name) {
+    if (!newParameterId || !newParameterName) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
+    }
+    
+    // Create new parameter
+    const newParameter: ParameterDefinition = {
+      id: newParameterId,
+      name: newParameterName,
+      type: newParameterType,
+      tooltip: newParameterTooltip,
+      storable: newParameterStorable,
+      unit: newParameterUnit || undefined,
+    };
+    
+    // Add options if it's a select type
+    if (newParameterType === "select" && newParameterOptions.length > 0) {
+      newParameter.options = newParameterOptions;
     }
     
     // Add parameter
@@ -121,54 +114,13 @@ function CalculatorEditor() {
     });
     
     // Reset form
-    setNewParameter({
-      id: "",
-      name: "",
-      type: "number",
-      tooltip: "",
-      storable: false,
-    });
-    
-    setIsAddingParameter(false);
-  };
-  
-  const handleEditParameter = () => {
-    // Validate
-    if (!newParameter.id || !newParameter.name || editingParameterIndex === null) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Update parameter
-    const updatedParameters = [...calculator.parameters];
-    updatedParameters[editingParameterIndex] = newParameter;
-    
-    setCalculator({
-      ...calculator,
-      parameters: updatedParameters,
-    });
-    
-    // Reset form
-    setNewParameter({
-      id: "",
-      name: "",
-      type: "number",
-      tooltip: "",
-      storable: false,
-    });
-    
-    setIsEditingParameter(false);
-    setEditingParameterIndex(null);
-  };
-  
-  const handleEditParameterClick = (index: number) => {
-    setEditingParameterIndex(index);
-    setNewParameter({...calculator.parameters[index]});
-    setIsEditingParameter(true);
+    setNewParameterId("");
+    setNewParameterName("");
+    setNewParameterType("number");
+    setNewParameterUnit("");
+    setNewParameterTooltip("");
+    setNewParameterStorable(false);
+    setNewParameterOptions([]);
   };
   
   const handleRemoveParameter = (index: number) => {
@@ -180,9 +132,84 @@ function CalculatorEditor() {
     });
   };
   
+  const handleUpdateParameter = (index: number, field: string, value: any) => {
+    const updatedParameters = [...calculator.parameters];
+    
+    if (field === "options") {
+      // Handle options array separately
+      updatedParameters[index] = {
+        ...updatedParameters[index],
+        options: value
+      };
+    } else {
+      // Handle regular fields
+      updatedParameters[index] = {
+        ...updatedParameters[index],
+        [field]: value
+      };
+    }
+    
+    setCalculator({
+      ...calculator,
+      parameters: updatedParameters
+    });
+  };
+  
+  const handleAddParameterOption = (parameterIndex: number) => {
+    const updatedParameters = [...calculator.parameters];
+    const currentOptions = updatedParameters[parameterIndex].options || [];
+    
+    updatedParameters[parameterIndex] = {
+      ...updatedParameters[parameterIndex],
+      options: [...currentOptions, { value: "", label: "" }]
+    };
+    
+    setCalculator({
+      ...calculator,
+      parameters: updatedParameters
+    });
+  };
+  
+  const handleUpdateParameterOption = (parameterIndex: number, optionIndex: number, field: string, value: string) => {
+    const updatedParameters = [...calculator.parameters];
+    const currentOptions = [...(updatedParameters[parameterIndex].options || [])];
+    
+    currentOptions[optionIndex] = {
+      ...currentOptions[optionIndex],
+      [field]: value
+    };
+    
+    updatedParameters[parameterIndex] = {
+      ...updatedParameters[parameterIndex],
+      options: currentOptions
+    };
+    
+    setCalculator({
+      ...calculator,
+      parameters: updatedParameters
+    });
+  };
+  
+  const handleRemoveParameterOption = (parameterIndex: number, optionIndex: number) => {
+    const updatedParameters = [...calculator.parameters];
+    const currentOptions = [...(updatedParameters[parameterIndex].options || [])];
+    
+    currentOptions.splice(optionIndex, 1);
+    
+    updatedParameters[parameterIndex] = {
+      ...updatedParameters[parameterIndex],
+      options: currentOptions
+    };
+    
+    setCalculator({
+      ...calculator,
+      parameters: updatedParameters
+    });
+  };
+  
   const handleAddQuestion = () => {
     // Validate
-    if (!newQuestion.id || !newQuestion.question) {
+    if (!newQuestionId || !newQuestionText) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -194,58 +221,41 @@ function CalculatorEditor() {
     // Add question
     setCalculator({
       ...calculator,
-      screeningQuestions: [...calculator.screeningQuestions, newQuestion],
+      screeningQuestions: [
+        ...calculator.screeningQuestions, 
+        {
+          id: newQuestionId,
+          question: newQuestionText,
+          type: "boolean",
+          eliminates: newQuestionEliminates,
+          eliminationMessage: newQuestionEliminates ? newQuestionEliminationMessage : undefined,
+        }
+      ],
     });
     
     // Reset form
-    setNewQuestion({
-      id: "",
-      question: "",
-      type: "boolean",
-      eliminates: false,
-      eliminationMessage: "",
-    });
-    
-    setIsAddingQuestion(false);
+    setNewQuestionId("");
+    setNewQuestionText("");
+    setNewQuestionEliminates(false);
+    setNewQuestionEliminationMessage("");
   };
   
-  const handleEditQuestion = () => {
-    // Validate
-    if (!newQuestion.id || !newQuestion.question || editingQuestionIndex === null) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Update question
+  const handleUpdateQuestion = (index: number, field: string, value: any) => {
     const updatedQuestions = [...calculator.screeningQuestions];
-    updatedQuestions[editingQuestionIndex] = newQuestion;
+    updatedQuestions[index] = {
+      ...updatedQuestions[index],
+      [field]: value
+    };
+    
+    // If eliminates is set to false, clear the elimination message
+    if (field === "eliminates" && value === false) {
+      updatedQuestions[index].eliminationMessage = undefined;
+    }
     
     setCalculator({
       ...calculator,
-      screeningQuestions: updatedQuestions,
+      screeningQuestions: updatedQuestions
     });
-    
-    // Reset form
-    setNewQuestion({
-      id: "",
-      question: "",
-      type: "boolean",
-      eliminates: false,
-      eliminationMessage: "",
-    });
-    
-    setIsEditingQuestion(false);
-    setEditingQuestionIndex(null);
-  };
-  
-  const handleEditQuestionClick = (index: number) => {
-    setEditingQuestionIndex(index);
-    setNewQuestion({...calculator.screeningQuestions[index]});
-    setIsEditingQuestion(true);
   };
   
   const handleRemoveQuestion = (index: number) => {
@@ -259,7 +269,7 @@ function CalculatorEditor() {
   
   const handleAddRange = () => {
     // Validate
-    if (newRange.interpretation === "") {
+    if (newRangeInterpretation === "") {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -273,65 +283,39 @@ function CalculatorEditor() {
       ...calculator,
       interpretations: {
         ...calculator.interpretations,
-        ranges: [...calculator.interpretations.ranges, newRange],
+        ranges: [
+          ...calculator.interpretations.ranges, 
+          {
+            min: newRangeMin,
+            max: newRangeMax,
+            interpretation: newRangeInterpretation,
+            severity: newRangeSeverity,
+          }
+        ],
       },
     });
     
     // Reset form
-    setNewRange({
-      min: 0,
-      max: 0,
-      interpretation: "",
-      severity: "low",
-    });
-    
-    setIsAddingRange(false);
+    setNewRangeMin(0);
+    setNewRangeMax(0);
+    setNewRangeInterpretation("");
+    setNewRangeSeverity("low");
   };
   
-  const handleEditRange = () => {
-    // Validate
-    if (newRange.interpretation === "" || editingRangeIndex === null) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Update range
+  const handleUpdateRange = (index: number, field: string, value: any) => {
     const updatedRanges = [...calculator.interpretations.ranges];
-    updatedRanges[editingRangeIndex] = newRange;
+    updatedRanges[index] = {
+      ...updatedRanges[index],
+      [field]: field === "min" || field === "max" ? Number(value) : value
+    };
     
     setCalculator({
       ...calculator,
       interpretations: {
         ...calculator.interpretations,
-        ranges: updatedRanges,
-      },
+        ranges: updatedRanges
+      }
     });
-    
-    // Reset form
-    setNewRange({
-      min: 0,
-      max: 0,
-      interpretation: "",
-      severity: "low",
-    });
-    
-    setIsEditingRange(false);
-    setEditingRangeIndex(null);
-  };
-  
-  const handleEditRangeClick = (index: number) => {
-    setEditingRangeIndex(index);
-    // Fix: Ensure severity is always set, defaulting to 'low' if not present
-    const range = calculator.interpretations.ranges[index];
-    setNewRange({
-      ...range,
-      severity: range.severity || "low"
-    });
-    setIsEditingRange(true);
   };
   
   const handleRemoveRange = (index: number) => {
@@ -365,41 +349,20 @@ function CalculatorEditor() {
     
     // Reset form
     setNewReference("");
-    
-    setIsAddingReference(false);
   };
   
-  const handleEditReference = () => {
-    // Validate
-    if (!newReference || editingReferenceIndex === null) {
-      toast({
-        title: "Missing information",
-        description: "Please enter a reference",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Update reference
+  const handleUpdateReference = (index: number, value: string) => {
     const updatedReferences = [...calculator.references];
-    updatedReferences[editingReferenceIndex] = newReference;
+    updatedReferences[index] = value;
     
     setCalculator({
       ...calculator,
-      references: updatedReferences,
+      references: updatedReferences
     });
     
-    // Reset form
-    setNewReference("");
-    
-    setIsEditingReference(false);
-    setEditingReferenceIndex(null);
-  };
-  
-  const handleEditReferenceClick = (index: number) => {
-    setEditingReferenceIndex(index);
-    setNewReference(calculator.references[index]);
-    setIsEditingReference(true);
+    if (editingReferenceIndex === index) {
+      setEditingReferenceIndex(null);
+    }
   };
   
   const handleRemoveReference = (index: number) => {
@@ -408,18 +371,6 @@ function CalculatorEditor() {
     setCalculator({
       ...calculator,
       references: updatedReferences,
-    });
-  };
-  
-  const handleUpdateQuestion = (index: number, field: string, value: any) => {
-    const updatedQuestions = [...calculator.screeningQuestions];
-    updatedQuestions[index] = {
-      ...updatedQuestions[index],
-      [field]: value
-    };
-    setCalculator({
-      ...calculator,
-      screeningQuestions: updatedQuestions
     });
   };
   
@@ -536,405 +487,276 @@ function CalculatorEditor() {
               {/* Parameters Tab */}
               <TabsContent value="parameters" className="space-y-4 py-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Parameters</CardTitle>
-                      <CardDescription>
-                        Define the input parameters for this calculator
-                      </CardDescription>
-                    </div>
-                    <Dialog open={isAddingParameter} onOpenChange={setIsAddingParameter}>
-                      <DialogTrigger asChild>
-                        <Button>
+                  <CardHeader>
+                    <CardTitle>Parameters</CardTitle>
+                    <CardDescription>
+                      Define the input parameters for this calculator
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <ScrollArea className="h-[500px] pr-4">
+                      {calculator.parameters.map((param, index) => (
+                        <Card key={param.id} className="mb-4">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={param.name}
+                                  onChange={(e) => handleUpdateParameter(index, "name", e.target.value)}
+                                  className="font-semibold text-lg"
+                                  placeholder="Parameter Name"
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  ID: 
+                                  <Input
+                                    value={param.id}
+                                    onChange={(e) => handleUpdateParameter(index, "id", e.target.value)}
+                                    className="w-24 h-6 text-xs ml-1 inline-block"
+                                  />
+                                </span>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveParameter(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-2 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`param-${index}-type`}>Type</Label>
+                                <Select 
+                                  value={param.type}
+                                  onValueChange={(value: "number" | "select" | "boolean") => 
+                                    handleUpdateParameter(index, "type", value)
+                                  }
+                                >
+                                  <SelectTrigger id={`param-${index}-type`}>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="number">Number</SelectItem>
+                                    <SelectItem value="select">Select</SelectItem>
+                                    <SelectItem value="boolean">Boolean</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor={`param-${index}-unit`}>Unit (optional)</Label>
+                                <Input
+                                  id={`param-${index}-unit`}
+                                  value={param.unit || ""}
+                                  onChange={(e) => handleUpdateParameter(index, "unit", e.target.value)}
+                                  placeholder="e.g., years"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor={`param-${index}-tooltip`}>Tooltip</Label>
+                              <Textarea
+                                id={`param-${index}-tooltip`}
+                                value={param.tooltip}
+                                onChange={(e) => handleUpdateParameter(index, "tooltip", e.target.value)}
+                                placeholder="Explanation of this parameter"
+                                rows={2}
+                              />
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id={`param-${index}-storable`}
+                                checked={param.storable}
+                                onCheckedChange={(checked) => handleUpdateParameter(index, "storable", checked)}
+                              />
+                              <Label htmlFor={`param-${index}-storable`}>
+                                Allow this parameter to be stored for reuse
+                              </Label>
+                            </div>
+                            
+                            {param.type === "select" && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Label>Options</Label>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => handleAddParameterOption(index)}
+                                  >
+                                    <Plus className="h-3.5 w-3.5 mr-1" />
+                                    Add Option
+                                  </Button>
+                                </div>
+                                
+                                {(param.options || []).map((option, optionIndex) => (
+                                  <div key={optionIndex} className="flex items-center gap-2">
+                                    <Input 
+                                      value={option.label}
+                                      onChange={(e) => handleUpdateParameterOption(index, optionIndex, "label", e.target.value)}
+                                      placeholder="Label"
+                                      className="flex-1"
+                                    />
+                                    <Input 
+                                      value={option.value.toString()}
+                                      onChange={(e) => handleUpdateParameterOption(index, optionIndex, "value", e.target.value)}
+                                      placeholder="Value"
+                                      className="flex-1"
+                                    />
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => handleRemoveParameterOption(index, optionIndex)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </ScrollArea>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Add New Parameter</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-param-id">ID</Label>
+                            <Input
+                              id="new-param-id"
+                              value={newParameterId}
+                              onChange={(e) => setNewParameterId(e.target.value)}
+                              placeholder="e.g., age"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-param-name">Name</Label>
+                            <Input
+                              id="new-param-name"
+                              value={newParameterName}
+                              onChange={(e) => setNewParameterName(e.target.value)}
+                              placeholder="e.g., Age"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-param-type">Type</Label>
+                            <Select 
+                              value={newParameterType}
+                              onValueChange={(value: "number" | "select" | "boolean") => setNewParameterType(value)}
+                            >
+                              <SelectTrigger id="new-param-type">
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="number">Number</SelectItem>
+                                <SelectItem value="select">Select</SelectItem>
+                                <SelectItem value="boolean">Boolean</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="new-param-unit">Unit (optional)</Label>
+                            <Input
+                              id="new-param-unit"
+                              value={newParameterUnit}
+                              onChange={(e) => setNewParameterUnit(e.target.value)}
+                              placeholder="e.g., years"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="new-param-tooltip">Tooltip</Label>
+                          <Textarea
+                            id="new-param-tooltip"
+                            value={newParameterTooltip}
+                            onChange={(e) => setNewParameterTooltip(e.target.value)}
+                            placeholder="Explanation of this parameter"
+                            rows={2}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="new-param-storable"
+                            checked={newParameterStorable}
+                            onCheckedChange={setNewParameterStorable}
+                          />
+                          <Label htmlFor="new-param-storable">
+                            Allow this parameter to be stored for reuse
+                          </Label>
+                        </div>
+                        
+                        {newParameterType === "select" && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label>Options</Label>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setNewParameterOptions([...newParameterOptions, { value: "", label: "" }])}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                Add Option
+                              </Button>
+                            </div>
+                            
+                            {newParameterOptions.map((option, optionIndex) => (
+                              <div key={optionIndex} className="flex items-center gap-2">
+                                <Input 
+                                  value={option.label}
+                                  onChange={(e) => {
+                                    const updatedOptions = [...newParameterOptions];
+                                    updatedOptions[optionIndex] = { ...option, label: e.target.value };
+                                    setNewParameterOptions(updatedOptions);
+                                  }}
+                                  placeholder="Label"
+                                  className="flex-1"
+                                />
+                                <Input 
+                                  value={option.value.toString()}
+                                  onChange={(e) => {
+                                    const updatedOptions = [...newParameterOptions];
+                                    updatedOptions[optionIndex] = { ...option, value: e.target.value };
+                                    setNewParameterOptions(updatedOptions);
+                                  }}
+                                  placeholder="Value"
+                                  className="flex-1"
+                                />
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    const updatedOptions = [...newParameterOptions];
+                                    updatedOptions.splice(optionIndex, 1);
+                                    setNewParameterOptions(updatedOptions);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter>
+                        <Button onClick={handleAddParameter}>
                           <Plus className="mr-2 h-4 w-4" />
                           Add Parameter
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add Parameter</DialogTitle>
-                          <DialogDescription>
-                            Define a new input parameter for this calculator.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="param-id" className="text-right">
-                              ID
-                            </Label>
-                            <Input
-                              id="param-id"
-                              value={newParameter.id}
-                              onChange={(e) => setNewParameter({...newParameter, id: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., age"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="param-name" className="text-right">
-                              Name
-                            </Label>
-                            <Input
-                              id="param-name"
-                              value={newParameter.name}
-                              onChange={(e) => setNewParameter({...newParameter, name: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., Age"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="param-type" className="text-right">
-                              Type
-                            </Label>
-                            <Select 
-                              value={newParameter.type}
-                              onValueChange={(value: "number" | "select" | "boolean") => setNewParameter({...newParameter, type: value})}
-                            >
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Select a type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="select">Select</SelectItem>
-                                <SelectItem value="boolean">Boolean</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="param-unit" className="text-right">
-                              Unit
-                            </Label>
-                            <Input
-                              id="param-unit"
-                              value={newParameter.unit || ""}
-                              onChange={(e) => setNewParameter({...newParameter, unit: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., years"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="param-tooltip" className="text-right">
-                              Tooltip
-                            </Label>
-                            <Textarea
-                              id="param-tooltip"
-                              value={newParameter.tooltip}
-                              onChange={(e) => setNewParameter({...newParameter, tooltip: e.target.value})}
-                              className="col-span-3"
-                              placeholder="Explanation of this parameter"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="param-storable" className="text-right">
-                              Storable
-                            </Label>
-                            <div className="flex items-center space-x-2 col-span-3">
-                              <Switch
-                                id="param-storable"
-                                checked={newParameter.storable}
-                                onCheckedChange={(checked) => setNewParameter({...newParameter, storable: checked})}
-                              />
-                              <Label htmlFor="param-storable">
-                                Allow this parameter to be stored for reuse
-                              </Label>
-                            </div>
-                          </div>
-                          
-                          {newParameter.type === "select" && (
-                            <div className="grid grid-cols-4 items-start gap-4">
-                              <Label className="text-right mt-2">
-                                Options
-                              </Label>
-                              <div className="col-span-3 space-y-2">
-                                {newParameter.options && newParameter.options.map((option, index) => (
-                                  <div key={index} className="flex items-center gap-2">
-                                    <Input 
-                                      value={option.label}
-                                      onChange={(e) => {
-                                        const updatedOptions = [...(newParameter.options || [])];
-                                        updatedOptions[index] = { ...option, label: e.target.value };
-                                        setNewParameter({...newParameter, options: updatedOptions});
-                                      }}
-                                      placeholder="Label"
-                                      className="flex-1"
-                                    />
-                                    <Input 
-                                      value={option.value.toString()}
-                                      onChange={(e) => {
-                                        const updatedOptions = [...(newParameter.options || [])];
-                                        updatedOptions[index] = { ...option, value: e.target.value };
-                                        setNewParameter({...newParameter, options: updatedOptions});
-                                      }}
-                                      placeholder="Value"
-                                      className="flex-1"
-                                    />
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => {
-                                        const updatedOptions = [...(newParameter.options || [])];
-                                        updatedOptions.splice(index, 1);
-                                        setNewParameter({...newParameter, options: updatedOptions});
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const updatedOptions = [...(newParameter.options || [])];
-                                    updatedOptions.push({ label: "", value: "" });
-                                    setNewParameter({...newParameter, options: updatedOptions});
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Option
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsAddingParameter(false)}>Cancel</Button>
-                          <Button onClick={handleAddParameter}>Add Parameter</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    {/* Edit Parameter Dialog */}
-                    <Dialog open={isEditingParameter} onOpenChange={setIsEditingParameter}>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Parameter</DialogTitle>
-                          <DialogDescription>
-                            Modify this parameter's details.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-param-id" className="text-right">
-                              ID
-                            </Label>
-                            <Input
-                              id="edit-param-id"
-                              value={newParameter.id}
-                              onChange={(e) => setNewParameter({...newParameter, id: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., age"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-param-name" className="text-right">
-                              Name
-                            </Label>
-                            <Input
-                              id="edit-param-name"
-                              value={newParameter.name}
-                              onChange={(e) => setNewParameter({...newParameter, name: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., Age"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-param-type" className="text-right">
-                              Type
-                            </Label>
-                            <Select 
-                              value={newParameter.type}
-                              onValueChange={(value: "number" | "select" | "boolean") => setNewParameter({...newParameter, type: value})}
-                            >
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Select a type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="select">Select</SelectItem>
-                                <SelectItem value="boolean">Boolean</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-param-unit" className="text-right">
-                              Unit
-                            </Label>
-                            <Input
-                              id="edit-param-unit"
-                              value={newParameter.unit || ""}
-                              onChange={(e) => setNewParameter({...newParameter, unit: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., years"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-param-tooltip" className="text-right">
-                              Tooltip
-                            </Label>
-                            <Textarea
-                              id="edit-param-tooltip"
-                              value={newParameter.tooltip}
-                              onChange={(e) => setNewParameter({...newParameter, tooltip: e.target.value})}
-                              className="col-span-3"
-                              placeholder="Explanation of this parameter"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-param-storable" className="text-right">
-                              Storable
-                            </Label>
-                            <div className="flex items-center space-x-2 col-span-3">
-                              <Switch
-                                id="edit-param-storable"
-                                checked={newParameter.storable}
-                                onCheckedChange={(checked) => setNewParameter({...newParameter, storable: checked})}
-                              />
-                              <Label htmlFor="edit-param-storable">
-                                Allow this parameter to be stored for reuse
-                              </Label>
-                            </div>
-                          </div>
-                          
-                          {newParameter.type === "select" && (
-                            <div className="grid grid-cols-4 items-start gap-4">
-                              <Label className="text-right mt-2">
-                                Options
-                              </Label>
-                              <div className="col-span-3 space-y-2">
-                                {newParameter.options && newParameter.options.map((option, index) => (
-                                  <div key={index} className="flex items-center gap-2">
-                                    <Input 
-                                      value={option.label}
-                                      onChange={(e) => {
-                                        const updatedOptions = [...(newParameter.options || [])];
-                                        updatedOptions[index] = { ...option, label: e.target.value };
-                                        setNewParameter({...newParameter, options: updatedOptions});
-                                      }}
-                                      placeholder="Label"
-                                      className="flex-1"
-                                    />
-                                    <Input 
-                                      value={option.value.toString()}
-                                      onChange={(e) => {
-                                        const updatedOptions = [...(newParameter.options || [])];
-                                        updatedOptions[index] = { ...option, value: e.target.value };
-                                        setNewParameter({...newParameter, options: updatedOptions});
-                                      }}
-                                      placeholder="Value"
-                                      className="flex-1"
-                                    />
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => {
-                                        const updatedOptions = [...(newParameter.options || [])];
-                                        updatedOptions.splice(index, 1);
-                                        setNewParameter({...newParameter, options: updatedOptions});
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const updatedOptions = [...(newParameter.options || [])];
-                                    updatedOptions.push({ label: "", value: "" });
-                                    setNewParameter({...newParameter, options: updatedOptions});
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Option
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => {
-                            setIsEditingParameter(false);
-                            setEditingParameterIndex(null);
-                          }}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleEditParameter}>Save Changes</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </CardHeader>
-                  <CardContent>
-                    {calculator.parameters.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No parameters defined yet. Click "Add Parameter" to create one.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {calculator.parameters.map((param, index) => (
-                          <Card key={param.id}>
-                            <CardHeader className="py-3">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">{param.name}</CardTitle>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditParameterClick(index)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleRemoveParameter(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                              <CardDescription>ID: {param.id}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="py-2">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium">Type:</span> {param.type}
-                                </div>
-                                {param.unit && (
-                                  <div>
-                                    <span className="font-medium">Unit:</span> {param.unit}
-                                  </div>
-                                )}
-                                <div className="col-span-2">
-                                  <span className="font-medium">Tooltip:</span> {param.tooltip}
-                                </div>
-                                <div className="col-span-2">
-                                  <span className="font-medium">Storable:</span> {param.storable ? "Yes" : "No"}
-                                </div>
-                                {param.type === "select" && param.options && (
-                                  <div className="col-span-2">
-                                    <span className="font-medium">Options:</span>
-                                    <ul className="list-disc pl-5 mt-1">
-                                      {param.options.map((option, i) => (
-                                        <li key={i}>{option.label} ({option.value})</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
+                      </CardFooter>
+                    </Card>
                   </CardContent>
                 </Card>
                 
@@ -979,235 +801,128 @@ function CalculatorEditor() {
               {/* Screening Tab */}
               <TabsContent value="screening" className="space-y-4 py-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Screening Questions</CardTitle>
-                      <CardDescription>
-                        Define pre-screening questions to determine calculator applicability
-                      </CardDescription>
-                    </div>
-                    <Dialog open={isAddingQuestion} onOpenChange={setIsAddingQuestion}>
-                      <DialogTrigger asChild>
-                        <Button>
+                  <CardHeader>
+                    <CardTitle>Screening Questions</CardTitle>
+                    <CardDescription>
+                      Define pre-screening questions to determine calculator applicability
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <ScrollArea className="h-[400px] pr-4">
+                      {calculator.screeningQuestions.map((question, index) => (
+                        <Card key={question.id} className="mb-4">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <Input
+                                value={question.question}
+                                onChange={(e) => handleUpdateQuestion(index, "question", e.target.value)}
+                                className="font-semibold"
+                                placeholder="Question text"
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveQuestion(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              ID: 
+                              <Input
+                                value={question.id}
+                                onChange={(e) => handleUpdateQuestion(index, "id", e.target.value)}
+                                className="w-24 h-6 text-xs ml-1 inline-block"
+                              />
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-2 space-y-4">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id={`question-${index}-eliminates`}
+                                checked={question.eliminates}
+                                onCheckedChange={(checked) => handleUpdateQuestion(index, "eliminates", checked)}
+                              />
+                              <Label htmlFor={`question-${index}-eliminates`}>
+                                A "No" answer makes calculator inappropriate
+                              </Label>
+                            </div>
+                            
+                            {question.eliminates && (
+                              <div>
+                                <Label htmlFor={`question-${index}-message`}>Warning Message</Label>
+                                <Textarea
+                                  id={`question-${index}-message`}
+                                  value={question.eliminationMessage || ""}
+                                  onChange={(e) => handleUpdateQuestion(index, "eliminationMessage", e.target.value)}
+                                  placeholder="Message to show when eliminated"
+                                  rows={2}
+                                />
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </ScrollArea>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Add New Question</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="new-question-id">ID</Label>
+                          <Input
+                            id="new-question-id"
+                            value={newQuestionId}
+                            onChange={(e) => setNewQuestionId(e.target.value)}
+                            placeholder="e.g., patientAge"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="new-question-text">Question</Label>
+                          <Textarea
+                            id="new-question-text"
+                            value={newQuestionText}
+                            onChange={(e) => setNewQuestionText(e.target.value)}
+                            placeholder="e.g., Is the patient over 18 years old?"
+                            rows={2}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="new-question-eliminates"
+                            checked={newQuestionEliminates}
+                            onCheckedChange={setNewQuestionEliminates}
+                          />
+                          <Label htmlFor="new-question-eliminates">
+                            A "No" answer makes calculator inappropriate
+                          </Label>
+                        </div>
+                        
+                        {newQuestionEliminates && (
+                          <div>
+                            <Label htmlFor="new-question-message">Warning Message</Label>
+                            <Textarea
+                              id="new-question-message"
+                              value={newQuestionEliminationMessage}
+                              onChange={(e) => setNewQuestionEliminationMessage(e.target.value)}
+                              placeholder="Message to show when eliminated"
+                              rows={2}
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                      <CardFooter>
+                        <Button onClick={handleAddQuestion}>
                           <Plus className="mr-2 h-4 w-4" />
                           Add Question
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add Screening Question</DialogTitle>
-                          <DialogDescription>
-                            Define a new pre-screening question for this calculator.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="question-id" className="text-right">
-                              ID
-                            </Label>
-                            <Input
-                              id="question-id"
-                              value={newQuestion.id}
-                              onChange={(e) => setNewQuestion({...newQuestion, id: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., patientAge"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="question-text" className="text-right">
-                              Question
-                            </Label>
-                            <Textarea
-                              id="question-text"
-                              value={newQuestion.question}
-                              onChange={(e) => setNewQuestion({...newQuestion, question: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., Is the patient over 18 years old?"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="question-eliminates" className="text-right">
-                              Eliminates
-                            </Label>
-                            <div className="flex items-center space-x-2 col-span-3">
-                              <Switch
-                                id="question-eliminates"
-                                checked={newQuestion.eliminates}
-                                onCheckedChange={(checked) => setNewQuestion({...newQuestion, eliminates: checked})}
-                              />
-                              <Label htmlFor="question-eliminates">
-                                A "No" answer makes calculator inappropriate
-                              </Label>
-                            </div>
-                          </div>
-                          {newQuestion.eliminates && (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="elimination-message" className="text-right">
-                                Warning Message
-                              </Label>
-                              <Textarea
-                                id="elimination-message"
-                                value={newQuestion.eliminationMessage || ""}
-                                onChange={(e) => setNewQuestion({...newQuestion, eliminationMessage: e.target.value})}
-                                className="col-span-3"
-                                placeholder="Message to show when eliminated"
-                                rows={2}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsAddingQuestion(false)}>Cancel</Button>
-                          <Button onClick={handleAddQuestion}>Add Question</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    {/* Edit Question Dialog */}
-                    <Dialog open={isEditingQuestion} onOpenChange={setIsEditingQuestion}>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Screening Question</DialogTitle>
-                          <DialogDescription>
-                            Modify this screening question's details.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-question-id" className="text-right">
-                              ID
-                            </Label>
-                            <Input
-                              id="edit-question-id"
-                              value={newQuestion.id}
-                              onChange={(e) => setNewQuestion({...newQuestion, id: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., patientAge"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-question-text" className="text-right">
-                              Question
-                            </Label>
-                            <Textarea
-                              id="edit-question-text"
-                              value={newQuestion.question}
-                              onChange={(e) => setNewQuestion({...newQuestion, question: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., Is the patient over 18 years old?"
-                              rows={3}
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-question-eliminates" className="text-right">
-                              Eliminates
-                            </Label>
-                            <div className="flex items-center space-x-2 col-span-3">
-                              <Switch
-                                id="edit-question-eliminates"
-                                checked={newQuestion.eliminates}
-                                onCheckedChange={(checked) => setNewQuestion({...newQuestion, eliminates: checked})}
-                              />
-                              <Label htmlFor="edit-question-eliminates">
-                                A "No" answer makes calculator inappropriate
-                              </Label>
-                            </div>
-                          </div>
-                          {newQuestion.eliminates && (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="edit-elimination-message" className="text-right">
-                                Warning Message
-                              </Label>
-                              <Textarea
-                                id="edit-elimination-message"
-                                value={newQuestion.eliminationMessage || ""}
-                                onChange={(e) => setNewQuestion({...newQuestion, eliminationMessage: e.target.value})}
-                                className="col-span-3"
-                                placeholder="Message to show when eliminated"
-                                rows={2}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => {
-                            setIsEditingQuestion(false);
-                            setEditingQuestionIndex(null);
-                          }}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleEditQuestion}>Save Changes</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </CardHeader>
-                  <CardContent>
-                    {calculator.screeningQuestions.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No screening questions defined yet. Click "Add Question" to create one.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {calculator.screeningQuestions.map((question, index) => (
-                          <Card key={question.id}>
-                            <CardHeader className="py-3">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">{question.question}</CardTitle>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditQuestionClick(index)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleRemoveQuestion(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                              <CardDescription>ID: {question.id}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="py-2">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">Eliminates:</span>
-                                  <Switch
-                                    checked={question.eliminates}
-                                    onCheckedChange={(checked) => handleUpdateQuestion(index, 'eliminates', checked)}
-                                  />
-                                </div>
-                                {question.eliminates && (
-                                  <div className="col-span-2 space-y-2">
-                                    <Label htmlFor={`elimination-message-${index}`} className="font-medium">
-                                      Warning Message:
-                                    </Label>
-                                    <Textarea
-                                      id={`elimination-message-${index}`}
-                                      value={question.eliminationMessage || ""}
-                                      onChange={(e) => handleUpdateQuestion(index, 'eliminationMessage', e.target.value)}
-                                      placeholder="Message to show when eliminated"
-                                      rows={2}
-                                      className="w-full"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
+                      </CardFooter>
+                    </Card>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1215,225 +930,146 @@ function CalculatorEditor() {
               {/* Interpretation Tab */}
               <TabsContent value="interpretation" className="space-y-4 py-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Score Interpretations</CardTitle>
-                      <CardDescription>
-                        Define how different score ranges should be interpreted
-                      </CardDescription>
-                    </div>
-                    <Dialog open={isAddingRange} onOpenChange={setIsAddingRange}>
-                      <DialogTrigger asChild>
-                        <Button>
+                  <CardHeader>
+                    <CardTitle>Score Interpretations</CardTitle>
+                    <CardDescription>
+                      Define how different score ranges should be interpreted
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <ScrollArea className="h-[300px] pr-4">
+                      {calculator.interpretations.ranges.map((range, index) => (
+                        <Card key={index} className="mb-4">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <Label>Min:</Label>
+                                  <Input
+                                    type="number"
+                                    value={range.min}
+                                    onChange={(e) => handleUpdateRange(index, "min", e.target.value)}
+                                    className="w-20 h-8"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Label>Max:</Label>
+                                  <Input
+                                    type="number"
+                                    value={range.max}
+                                    onChange={(e) => handleUpdateRange(index, "max", e.target.value)}
+                                    className="w-20 h-8"
+                                  />
+                                </div>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveRange(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-2 space-y-4">
+                            <div>
+                              <Label htmlFor={`range-${index}-interpretation`}>Interpretation</Label>
+                              <Textarea
+                                id={`range-${index}-interpretation`}
+                                value={range.interpretation}
+                                onChange={(e) => handleUpdateRange(index, "interpretation", e.target.value)}
+                                placeholder="e.g., Low risk of adverse events"
+                                rows={2}
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor={`range-${index}-severity`}>Severity</Label>
+                              <Select 
+                                value={range.severity || "low"}
+                                onValueChange={(value) => handleUpdateRange(index, "severity", value)}
+                              >
+                                <SelectTrigger id={`range-${index}-severity`}>
+                                  <SelectValue placeholder="Select severity level" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="low">Low</SelectItem>
+                                  <SelectItem value="moderate">Moderate</SelectItem>
+                                  <SelectItem value="high">High</SelectItem>
+                                  <SelectItem value="very-high">Very High</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </ScrollArea>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Add New Range</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="new-range-min">Min Score</Label>
+                            <Input
+                              id="new-range-min"
+                              type="number"
+                              value={newRangeMin}
+                              onChange={(e) => setNewRangeMin(Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-range-max">Max Score</Label>
+                            <Input
+                              id="new-range-max"
+                              type="number"
+                              value={newRangeMax}
+                              onChange={(e) => setNewRangeMax(Number(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="new-range-interpretation">Interpretation</Label>
+                          <Textarea
+                            id="new-range-interpretation"
+                            value={newRangeInterpretation}
+                            onChange={(e) => setNewRangeInterpretation(e.target.value)}
+                            placeholder="e.g., Low risk of adverse events"
+                            rows={2}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="new-range-severity">Severity</Label>
+                          <Select 
+                            value={newRangeSeverity}
+                            onValueChange={setNewRangeSeverity}
+                          >
+                            <SelectTrigger id="new-range-severity">
+                              <SelectValue placeholder="Select severity level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="moderate">Moderate</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="very-high">Very High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button onClick={handleAddRange}>
                           <Plus className="mr-2 h-4 w-4" />
                           Add Range
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add Score Range</DialogTitle>
-                          <DialogDescription>
-                            Define a new score range and its interpretation.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="range-min" className="text-right">
-                              Min Score
-                            </Label>
-                            <Input
-                              id="range-min"
-                              type="number"
-                              value={newRange.min}
-                              onChange={(e) => setNewRange({...newRange, min: Number(e.target.value)})}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="range-max" className="text-right">
-                              Max Score
-                            </Label>
-                            <Input
-                              id="range-max"
-                              type="number"
-                              value={newRange.max}
-                              onChange={(e) => setNewRange({...newRange, max: Number(e.target.value)})}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="range-interpretation" className="text-right">
-                              Interpretation
-                            </Label>
-                            <Textarea
-                              id="range-interpretation"
-                              value={newRange.interpretation}
-                              onChange={(e) => setNewRange({...newRange, interpretation: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., Low risk of adverse events"
-                              rows={2}
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="range-severity" className="text-right">
-                              Severity
-                            </Label>
-                            <Select 
-                              value={newRange.severity}
-                              onValueChange={(value) => setNewRange({...newRange, severity: value})}
-                            >
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Select severity level" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="moderate">Moderate</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                                <SelectItem value="very-high">Very High</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsAddingRange(false)}>Cancel</Button>
-                          <Button onClick={handleAddRange}>Add Range</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                      </CardFooter>
+                    </Card>
                     
-                    {/* Edit Range Dialog */}
-                    <Dialog open={isEditingRange} onOpenChange={setIsEditingRange}>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Score Range</DialogTitle>
-                          <DialogDescription>
-                            Modify this score range's details.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-range-min" className="text-right">
-                              Min Score
-                            </Label>
-                            <Input
-                              id="edit-range-min"
-                              type="number"
-                              value={newRange.min}
-                              onChange={(e) => setNewRange({...newRange, min: Number(e.target.value)})}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-range-max" className="text-right">
-                              Max Score
-                            </Label>
-                            <Input
-                              id="edit-range-max"
-                              type="number"
-                              value={newRange.max}
-                              onChange={(e) => setNewRange({...newRange, max: Number(e.target.value)})}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-range-interpretation" className="text-right">
-                              Interpretation
-                            </Label>
-                            <Textarea
-                              id="edit-range-interpretation"
-                              value={newRange.interpretation}
-                              onChange={(e) => setNewRange({...newRange, interpretation: e.target.value})}
-                              className="col-span-3"
-                              placeholder="e.g., Low risk of adverse events"
-                              rows={2}
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-range-severity" className="text-right">
-                              Severity
-                            </Label>
-                            <Select 
-                              value={newRange.severity}
-                              onValueChange={(value) => setNewRange({...newRange, severity: value})}
-                            >
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Select severity level" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="moderate">Moderate</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                                <SelectItem value="very-high">Very High</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => {
-                            setIsEditingRange(false);
-                            setEditingRangeIndex(null);
-                          }}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleEditRange}>Save Changes</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </CardHeader>
-                  <CardContent>
-                    {calculator.interpretations.ranges.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No interpretation ranges defined yet. Click "Add Range" to create one.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {calculator.interpretations.ranges.map((range, index) => (
-                          <Card key={index}>
-                            <CardHeader className="py-3">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg">
-                                  Score: {range.min} - {range.max}
-                                </CardTitle>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEditRangeClick(index)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleRemoveRange(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="py-2">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="col-span-2">
-                                  <span className="font-medium">Interpretation:</span> {range.interpretation}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Severity:</span> {range.severity}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter>
-                    <div className="w-full space-y-2">
+                    <div className="space-y-2">
                       <Label htmlFor="notes">Additional Notes</Label>
                       <Textarea
                         id="notes"
@@ -1449,7 +1085,7 @@ function CalculatorEditor() {
                         rows={3}
                       />
                     </div>
-                  </CardFooter>
+                  </CardContent>
                 </Card>
                 
                 <Card>
@@ -1491,120 +1127,72 @@ function calculate(params) {
               {/* References Tab */}
               <TabsContent value="references" className="space-y-4 py-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>References</CardTitle>
-                      <CardDescription>
-                        Add medical literature references for this calculator
-                      </CardDescription>
-                    </div>
-                    <Dialog open={isAddingReference} onOpenChange={setIsAddingReference}>
-                      <DialogTrigger asChild>
-                        <Button>
+                  <CardHeader>
+                    <CardTitle>References</CardTitle>
+                    <CardDescription>
+                      Add medical literature references for this calculator
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <ScrollArea className="h-[300px] pr-4">
+                      {calculator.references.map((reference, index) => (
+                        <div key={index} className="flex items-start gap-2 p-3 border rounded-md mb-2">
+                          {editingReferenceIndex === index ? (
+                            <Textarea
+                              value={reference}
+                              onChange={(e) => handleUpdateReference(index, e.target.value)}
+                              className="flex-1"
+                              autoFocus
+                              onBlur={() => setEditingReferenceIndex(null)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.ctrlKey) {
+                                  setEditingReferenceIndex(null);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div 
+                              className="flex-1 cursor-text" 
+                              onClick={() => setEditingReferenceIndex(index)}
+                            >
+                              {reference}
+                            </div>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => handleRemoveReference(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Add New Reference</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="new-reference">Reference</Label>
+                          <Textarea
+                            id="new-reference"
+                            value={newReference}
+                            onChange={(e) => setNewReference(e.target.value)}
+                            placeholder="e.g., Smith J, et al. Title of paper. Journal Name. 2020;10(2):123-145."
+                            rows={3}
+                          />
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button onClick={handleAddReference}>
                           <Plus className="mr-2 h-4 w-4" />
                           Add Reference
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add Reference</DialogTitle>
-                          <DialogDescription>
-                            Add a medical literature reference for this calculator.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="reference-text" className="text-right">
-                              Reference
-                            </Label>
-                            <Textarea
-                              id="reference-text"
-                              value={newReference}
-                              onChange={(e) => setNewReference(e.target.value)}
-                              className="col-span-3"
-                              placeholder="e.g., Smith J, et al. Title of paper. Journal Name. 2020;10(2):123-145."
-                              rows={4}
-                            />
-                          </div>
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsAddingReference(false)}>Cancel</Button>
-                          <Button onClick={handleAddReference}>Add Reference</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    {/* Edit Reference Dialog */}
-                    <Dialog open={isEditingReference} onOpenChange={setIsEditingReference}>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Reference</DialogTitle>
-                          <DialogDescription>
-                            Modify this reference.
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-reference-text" className="text-right">
-                              Reference
-                            </Label>
-                            <Textarea
-                              id="edit-reference-text"
-                              value={newReference}
-                              onChange={(e) => setNewReference(e.target.value)}
-                              className="col-span-3"
-                              placeholder="e.g., Smith J, et al. Title of paper. Journal Name. 2020;10(2):123-145."
-                              rows={4}
-                            />
-                          </div>
-                        </div>
-                        
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => {
-                            setIsEditingReference(false);
-                            setEditingReferenceIndex(null);
-                          }}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleEditReference}>Save Changes</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </CardHeader>
-                  <CardContent>
-                    {calculator.references.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No references added yet. Click "Add Reference" to add one.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {calculator.references.map((reference, index) => (
-                          <div key={index} className="flex items-start gap-2 p-3 border rounded-md">
-                            <div className="flex-1">{reference}</div>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleEditReferenceClick(index)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-destructive hover:bg-destructive/10"
-                                onClick={() => handleRemoveReference(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                      </CardFooter>
+                    </Card>
                   </CardContent>
                 </Card>
               </TabsContent>
