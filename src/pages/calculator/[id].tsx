@@ -9,7 +9,7 @@ import { ScreeningChecklist } from "@/components/calculators/ScreeningChecklist"
 import { ResultsDisplay } from "@/components/results/ResultsDisplay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calculator, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calculator, AlertCircle, Save } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -93,6 +93,9 @@ export default function CalculatorPage() {
     setScreeningComplete(true);
     setActiveTab("calculator");
   };
+  
+  // Check if calculator has any storable parameters
+  const hasStorableParameters = calculator?.parameters.some(param => param.storable) || false;
   
   if (!calculator) {
     return (
@@ -185,6 +188,14 @@ export default function CalculatorPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {hasStorableParameters && (
+                      <Alert className="mb-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                        <Save className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <AlertDescription className="text-blue-800 dark:text-blue-300">
+                          Some parameters can be saved for reuse across calculators. Look for the "Save for reuse" button next to input fields.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <ScrollArea className="h-[400px] pr-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {calculator.parameters.map((param) => (

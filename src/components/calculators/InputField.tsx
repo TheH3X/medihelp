@@ -5,9 +5,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Save, Check, InfoIcon } from "lucide-react";
 import { useParameterStore } from "@/lib/parameter-store";
-import { InfoIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { ParameterDefinition } from "@/lib/calculator-definitions";
 
 interface InputFieldProps {
@@ -18,14 +18,32 @@ interface InputFieldProps {
 
 export function InputField({ parameter, value, onChange }: InputFieldProps) {
   const { addParameter } = useParameterStore();
+  const { toast } = useToast();
+  const [justSaved, setJustSaved] = useState(false);
   
   const handleSaveParameter = () => {
-    if (parameter.storable) {
+    if (parameter.storable && value !== undefined && value !== null && value !== '') {
       addParameter({
         id: parameter.id,
         name: parameter.name,
         value: value,
         unit: parameter.unit,
+      });
+      
+      // Show success animation
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+      
+      // Show toast notification
+      toast({
+        title: "Parameter saved",
+        description: `${parameter.name} has been saved for reuse in other calculators.`,
+      });
+    } else if (value === undefined || value === null || value === '') {
+      toast({
+        title: "Cannot save empty value",
+        description: "Please enter a value before saving.",
+        variant: "destructive",
       });
     }
   };
@@ -48,15 +66,33 @@ export function InputField({ parameter, value, onChange }: InputFieldProps) {
         </div>
         
         {parameter.storable && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSaveParameter}
-            className="h-6 px-2"
-          >
-            <Save className="h-3 w-3 mr-1" />
-            Save
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant={justSaved ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={handleSaveParameter}
+                  className={`h-7 px-2 transition-all duration-300 ${justSaved ? "bg-green-600 hover:bg-green-700" : ""}`}
+                >
+                  {justSaved ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Saved
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5 mr-1" />
+                      Save for reuse
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Save this value to reuse in other calculators</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
 

@@ -1,8 +1,10 @@
 import { useParameterStore } from "@/lib/parameter-store";
 import { ParameterItem } from "./ParameterItem";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, HelpCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function StoredParametersList() {
   const { parameters, clearParameters } = useParameterStore();
@@ -10,7 +12,19 @@ export function StoredParametersList() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium">Stored Parameters</h3>
+        <div className="flex items-center gap-1">
+          <h3 className="text-lg font-medium">Stored Parameters</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help ml-1" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Parameters saved here will be available across all calculators. Click the "Save for reuse" button next to input fields to store values.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         {parameters.length > 0 && (
           <Button 
             variant="ghost" 
@@ -25,9 +39,12 @@ export function StoredParametersList() {
       </div>
       
       {parameters.length === 0 ? (
-        <div className="text-muted-foreground text-sm p-4 text-center">
-          No parameters stored yet. Parameters will appear here when you save them from calculators.
-        </div>
+        <Alert className="bg-muted/50 border-dashed">
+          <AlertDescription className="text-center py-4">
+            <p className="text-muted-foreground mb-2">No parameters stored yet.</p>
+            <p className="text-sm">Click "Save for reuse" next to input fields to store values that can be used across multiple calculators.</p>
+          </AlertDescription>
+        </Alert>
       ) : (
         <ScrollArea className="flex-1">
           <div className="space-y-2">
