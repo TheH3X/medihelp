@@ -7,7 +7,7 @@ import { StoredParametersList } from "@/components/parameters/StoredParametersLi
 import { InputField } from "@/components/calculators/InputField";
 import { ScreeningChecklist } from "@/components/calculators/ScreeningChecklist";
 import { ResultsDisplay } from "@/components/results/ResultsDisplay";
-import { AlgorithmDiagram } from "@/components/results/AlgorithmDiagram";
+import { AlgorithmDiagram } from "@/components/algorithms/AlgorithmDiagram";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calculator, AlertCircle, Save } from "lucide-react";
@@ -244,14 +244,6 @@ export default function CalculatorPage() {
                         inputs={inputs}
                       />
                     </div>
-                    
-                    {/* Conditionally render specialized result components based on calculator type */}
-                    {calculator.id === 'cv-risk' && (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-medium mb-2">Treatment Recommendations</h3>
-                        <CVRiskResultsMatrix result={result} inputs={inputs} />
-                      </div>
-                    )}
                     
                     <div className="mt-6">
                       <h3 className="text-lg font-medium mb-2">References</h3>
