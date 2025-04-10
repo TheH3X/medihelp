@@ -24,7 +24,6 @@ export default function CalculatorPage() {
   const [inputs, setInputs] = useState<Record<string, any>>({});
   const [result, setResult] = useState<any>(null);
   const [screeningComplete, setScreeningComplete] = useState(false);
-  const [screeningEligible, setScreeningEligible] = useState(true);
   const [activeTab, setActiveTab] = useState("screening");
   const [validationError, setValidationError] = useState<string | null>(null);
   
@@ -92,7 +91,6 @@ export default function CalculatorPage() {
   
   const handleScreeningComplete = (isEligible: boolean) => {
     setScreeningComplete(true);
-    setScreeningEligible(isEligible);
     setActiveTab("calculator");
   };
   
@@ -159,21 +157,19 @@ export default function CalculatorPage() {
                 ) : (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Pre-Screening</CardTitle>
+                      <CardTitle>Pre-Screening Checklist</CardTitle>
                       <CardDescription>
-                        No pre-screening questions are required for this calculator.
+                        No pre-screening questions are defined for this calculator.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p>You can proceed directly to the calculator.</p>
+                      <p className="text-muted-foreground">
+                        You can proceed directly to the calculator.
+                      </p>
                     </CardContent>
-                    <CardFooter>
-                      <Button onClick={() => {
-                        setScreeningComplete(true);
-                        setScreeningEligible(true);
-                        setActiveTab("calculator");
-                      }}>
-                        Continue to Calculator
+                    <CardFooter className="flex justify-end">
+                      <Button onClick={() => handleScreeningComplete(true)}>
+                        Proceed to Calculator
                       </Button>
                     </CardFooter>
                   </Card>
@@ -189,15 +185,6 @@ export default function CalculatorPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {!screeningEligible && (
-                      <Alert className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Based on the screening questions, this calculator may not be appropriate for your patient.
-                          Please interpret results with caution.
-                        </AlertDescription>
-                      </Alert>
-                    )}
                     <ScrollArea className="h-[400px] pr-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {calculator.parameters.map((param) => (

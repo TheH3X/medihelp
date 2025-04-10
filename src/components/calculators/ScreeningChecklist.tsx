@@ -67,13 +67,12 @@ export function ScreeningChecklist({ questions, onComplete }: ScreeningChecklist
             </RadioGroup>
             
             {question.eliminates && 
-             answers[question.id] === false && 
-             question.eliminationMessage && (
+             answers[question.id] === false && (
               <Alert variant="destructive" className="mt-2">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Warning</AlertTitle>
                 <AlertDescription>
-                  {question.eliminationMessage}
+                  {question.eliminationMessage || "This calculator may not be appropriate for your patient based on this answer."}
                 </AlertDescription>
               </Alert>
             )}

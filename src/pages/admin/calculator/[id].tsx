@@ -664,7 +664,7 @@ function CalculatorEditor() {
                                 value={newQuestion.eliminationMessage || ""}
                                 onChange={(e) => setNewQuestion({...newQuestion, eliminationMessage: e.target.value})}
                                 className="col-span-3"
-                                placeholder="Custom warning message to show when eliminated"
+                                placeholder="Message to show when eliminated"
                                 rows={2}
                               />
                             </div>
@@ -703,24 +703,25 @@ function CalculatorEditor() {
                             </CardHeader>
                             <CardContent className="py-2">
                               <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="col-span-2 flex items-center space-x-2">
-                                  <Label htmlFor={`question-${index}-eliminates`}>Eliminates:</Label>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Eliminates:</span>
                                   <Switch
-                                    id={`question-${index}-eliminates`}
                                     checked={question.eliminates}
                                     onCheckedChange={(checked) => handleUpdateQuestion(index, 'eliminates', checked)}
                                   />
                                 </div>
-                                
                                 {question.eliminates && (
                                   <div className="col-span-2 space-y-2">
-                                    <Label htmlFor={`question-${index}-message`}>Warning Message:</Label>
+                                    <Label htmlFor={`elimination-message-${index}`} className="font-medium">
+                                      Warning Message:
+                                    </Label>
                                     <Textarea
-                                      id={`question-${index}-message`}
+                                      id={`elimination-message-${index}`}
                                       value={question.eliminationMessage || ""}
                                       onChange={(e) => handleUpdateQuestion(index, 'eliminationMessage', e.target.value)}
-                                      placeholder="Custom warning message to show when eliminated"
+                                      placeholder="Message to show when eliminated"
                                       rows={2}
+                                      className="w-full"
                                     />
                                   </div>
                                 )}
@@ -1030,9 +1031,8 @@ function calculate(params) {
                             <Label htmlFor={`preview-${question.id}-no`} className="font-normal text-sm">No</Label>
                           </div>
                         </RadioGroup>
-                        
                         {question.eliminates && question.eliminationMessage && (
-                          <div className="text-sm text-destructive mt-1">
+                          <div className="mt-2 p-2 bg-destructive/10 text-destructive rounded-md text-sm">
                             Warning: {question.eliminationMessage}
                           </div>
                         )}
@@ -1086,6 +1086,9 @@ function calculate(params) {
                         )}
                         {param.unit && (
                           <p className="text-xs text-muted-foreground">Unit: {param.unit}</p>
+                        )}
+                        {param.tooltip && (
+                          <p className="text-xs text-muted-foreground">Tooltip: {param.tooltip}</p>
                         )}
                       </div>
                     ))}
