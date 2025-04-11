@@ -43,7 +43,7 @@ export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps)
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-[500px] relative">
+        <div className="w-full h-[600px] relative"> {/* Increased height from 500px to 600px */}
           <canvas 
             ref={canvasRef} 
             className="w-full h-full"
@@ -125,15 +125,19 @@ function calculateNodePositions(
     current = next;
   }
   
-  // Position nodes by level
-  const levelHeight = height / (levels.length + 1);
+  // Position nodes by level with increased vertical spacing
+  const levelHeight = height / (levels.length + 1) * 0.9; // Use 90% of available height
   
   levels.forEach((level, levelIndex) => {
-    const levelWidth = width / (level.length + 1);
+    // Increase horizontal spacing between nodes
+    const nodeWidth = 140; // Increased from 120
+    const horizontalSpacing = 60; // Space between nodes
+    const totalWidth = level.length * nodeWidth + (level.length - 1) * horizontalSpacing;
+    const startX = (width - totalWidth) / 2;
     
     level.forEach((nodeId, nodeIndex) => {
       positions[nodeId] = {
-        x: levelWidth * (nodeIndex + 1),
+        x: startX + nodeIndex * (nodeWidth + horizontalSpacing) + nodeWidth / 2,
         y: levelHeight * (levelIndex + 1)
       };
     });
@@ -155,9 +159,21 @@ function drawConnections(
     const node = nodes[nodeId];
     const nodePos = positions[nodeId];
     
+    if (!nodePos) return; // Skip if position is not defined
+    
     if (node.branches) {
-      node.branches.forEach(branch => {
+      // Calculate horizontal offsets for multiple branches
+      const branchCount = node.branches.length;
+      const branchSpacing = 30; // Pixels between branch starting points
+      const totalWidth = (branchCount - 1) * branchSpacing;
+      const startOffset = -totalWidth / 2;
+      
+      node.branches.forEach((branch, index) => {
         const targetPos = positions[branch.nextNodeId];
+        if (!targetPos) return; // Skip if target position is not defined
+        
+        // Calculate offset for this branch
+        const offset = startOffset + index * branchSpacing;
         
         // Check if this connection is part of the path
         const isInPath = path.includes(nodeId) && path.includes(branch.nextNodeId) &&
@@ -166,10 +182,10 @@ function drawConnections(
         // Draw the connection with elbow connector
         drawElbowConnector(
           ctx,
-          nodePos.x,
-          nodePos.y + 25, // Bottom of the node
+          nodePos.x + offset, // Add offset to starting x position
+          nodePos.y + 30, // Bottom of the node
           targetPos.x,
-          targetPos.y - 25, // Top of the target node
+          targetPos.y - 30, // Top of the target node
           branch.label,
           isInPath
         );
@@ -191,6 +207,8 @@ function drawNodes(
     const node = nodes[nodeId];
     const pos = positions[nodeId];
     
+    if (!pos) return; // Skip if position is not defined
+    
     // Check if this node is in the path
     const isInPath = path.includes(nodeId);
     
@@ -207,13 +225,13 @@ function drawNodes(
       color = '#fef9c3'; // Light yellow for results
     }
     
-    // Draw the node
+    // Draw the node with increased width
     drawBox(
       ctx,
-      pos.x - 60,
-      pos.y - 25,
-      120,
-      50,
+      pos.x - 70, // Increased width from 60 to 70
+      pos.y - 30, // Increased height from 25 to 30
+      140, // Increased width from 120 to 140
+      60, // Increased height from 50 to 60
       node.content,
       isInPath,
       color
@@ -260,11 +278,11 @@ function drawBox(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
-  // Handle multiline text
+  // Handle multiline text with word wrapping
   const words = text.split(' ');
   let line = '';
   const lines = [];
-  const maxWidth = width - 10;
+  const maxWidth = width - 16; // Reduced padding for more text space
   
   for (let i = 0; i < words.length; i++) {
     const testLine = line + words[i] + ' ';
@@ -280,21 +298,21 @@ function drawBox(
   }
   lines.push(line);
   
-  // Limit to 2 lines and add ellipsis if needed
-  if (lines.length > 2) {
-    lines[1] = lines[1].substring(0, lines[1].length - 3) + '...';
-    lines.splice(2);
+  // Limit to 3 lines and add ellipsis if needed
+  if (lines.length > 3) {
+    lines[2] = lines[2].substring(0, lines[2].length - 4) + '...';
+    lines.splice(3);
   }
   
   const lineHeight = 16;
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   
   lines.forEach((line, i) => {
-    ctx.fillText(line, x + width / 2, startY + i * lineHeight);
+    ctx.fillText(line.trim(), x + width / 2, startY + i * lineHeight);
   });
 }
 
-// New function to draw elbow connectors with increased height
+// Function to draw elbow connectors with increased height
 function drawElbowConnector(
   ctx: CanvasRenderingContext2D, 
   fromX: number, 
@@ -337,13 +355,27 @@ function drawElbowConnector(
   ctx.fillStyle = isHighlighted ? '#d97706' : '#94a3b8';
   ctx.fill();
   
-  // Draw text near the horizontal segment
+  // Draw text near the horizontal segment with better positioning
   if (text) {
     ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
     
-    // Position text above the horizontal line
+    // Create a background for the text to improve readability
+    const textMetrics = ctx.measureText(text);
+    const textWidth = textMetrics.width + 8;
+    const textHeight = 16;
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillRect(
+      (fromX + toX) / 2 - textWidth / 2,
+      midY - textHeight - 4,
+      textWidth,
+      textHeight
+    );
+    
+    // Draw the text
+    ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
     ctx.fillText(text, (fromX + toX) / 2, midY - 10);
   }
 }
