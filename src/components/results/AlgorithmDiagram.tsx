@@ -53,7 +53,7 @@ export function AlgorithmDiagram({ calculatorId, result, inputs }: AlgorithmDiag
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="w-full h-[350px] relative"> {/* Increased height from 300px to 350px */}
+        <div className="w-full h-[350px] relative">
           <canvas 
             ref={canvasRef} 
             className="w-full h-full"
@@ -75,7 +75,7 @@ function drawBox(
   isHighlighted: boolean = false,
   color: string = '#e2e8f0'
 ) {
-  const radius = 6;
+  const radius = 8;
   
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -124,9 +124,8 @@ function drawElbowConnector(
   text: string = '',
   isHighlighted: boolean = false
 ) {
-  // Calculate the midpoint Y position with increased height
-  // Use 70% of the vertical distance instead of 50% to make the elbow higher
-  const midY = fromY + (toY - fromY) * 0.7;
+  // Calculate the midpoint Y position
+  const midY = fromY + (toY - fromY) * 0.6;
   
   // Draw the elbow connector (three segments)
   ctx.beginPath();
@@ -188,8 +187,8 @@ function drawHasbledAlgorithm(
 ) {
   const width = ctx.canvas.width / window.devicePixelRatio;
   const height = ctx.canvas.height / window.devicePixelRatio;
-  const boxWidth = 130; // Increased from 120
-  const boxHeight = 60; // Increased from 50
+  const boxWidth = 140;
+  const boxHeight = 70;
   
   // Calculate score from inputs
   let score = 0;
@@ -204,13 +203,13 @@ function drawHasbledAlgorithm(
   if (inputs.labilePTINR) score += 1;
   
   // Draw start box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'HAS-BLED\\\\\\\\\nScore Calculation');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'HAS-BLED\\\\\\\\\\nScore Calculation');
   
   // Draw score box
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    110, // Increased spacing
+    120,
     boxWidth, 
     boxHeight, 
     `Score: ${score}`,
@@ -219,7 +218,7 @@ function drawHasbledAlgorithm(
   );
   
   // Draw arrow from start to score
-  drawElbowConnector(ctx, width/2, 80, width/2, 110, '', true);
+  drawElbowConnector(ctx, width/2, 90, width/2, 120, '', true);
   
   // Draw risk categories
   const isLowRisk = score <= 1;
@@ -230,10 +229,10 @@ function drawHasbledAlgorithm(
   drawBox(
     ctx, 
     width/4 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\\\\\\n(0-1)',
+    'Low Risk\\\\\\\\\\n(0-1)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -242,10 +241,10 @@ function drawHasbledAlgorithm(
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Intermediate Risk\\\\\\\\\n(2-3)',
+    'Intermediate Risk\\\\\\\\\\n(2-3)',
     isIntermediateRisk,
     isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -254,18 +253,18 @@ function drawHasbledAlgorithm(
   drawBox(
     ctx, 
     3*width/4 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'High Risk\\\\\\\\\n(≥4)',
+    'High Risk\\\\\\\\\\n(≥4)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
   
-  // Draw arrows from score to risk categories with more spacing
-  drawElbowConnector(ctx, width/2 - 40, 170, width/4, 220, 'Score ≤ 1', isLowRisk);
-  drawElbowConnector(ctx, width/2, 170, width/2, 220, 'Score 2-3', isIntermediateRisk);
-  drawElbowConnector(ctx, width/2 + 40, 170, 3*width/4, 220, 'Score ≥ 4', isHighRisk);
+  // Draw arrows from score to risk categories
+  drawElbowConnector(ctx, width/2 - 40, 190, width/4, 240, 'Score ≤ 1', isLowRisk);
+  drawElbowConnector(ctx, width/2, 190, width/2, 240, 'Score 2-3', isIntermediateRisk);
+  drawElbowConnector(ctx, width/2 + 40, 190, 3*width/4, 240, 'Score ≥ 4', isHighRisk);
 }
 
 function drawCha2ds2vascAlgorithm(
@@ -275,8 +274,8 @@ function drawCha2ds2vascAlgorithm(
 ) {
   const width = ctx.canvas.width / window.devicePixelRatio;
   const height = ctx.canvas.height / window.devicePixelRatio;
-  const boxWidth = 130; // Increased from 120
-  const boxHeight = 60; // Increased from 50
+  const boxWidth = 140;
+  const boxHeight = 70;
   
   // Calculate score from inputs
   let score = 0;
@@ -290,13 +289,13 @@ function drawCha2ds2vascAlgorithm(
   if (inputs.gender === 'female') score += 1;
   
   // Draw start box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CHA₂DS₂-VASc\\\\\\\\\nScore Calculation');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CHA₂DS₂-VASc\\\\\\\\\\nScore Calculation');
   
   // Draw score box
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    110, // Increased spacing
+    120,
     boxWidth, 
     boxHeight, 
     `Score: ${score}`,
@@ -305,7 +304,7 @@ function drawCha2ds2vascAlgorithm(
   );
   
   // Draw arrow from start to score
-  drawElbowConnector(ctx, width/2, 80, width/2, 110, '', true);
+  drawElbowConnector(ctx, width/2, 90, width/2, 120, '', true);
   
   // Draw risk categories
   const isLowRisk = score === 0;
@@ -316,10 +315,10 @@ function drawCha2ds2vascAlgorithm(
   drawBox(
     ctx, 
     width/4 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\\\\\\n(0)',
+    'Low Risk\\\\\\\\\\n(0)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -328,10 +327,10 @@ function drawCha2ds2vascAlgorithm(
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Low-Moderate Risk\\\\\\\\\n(1)',
+    'Low-Moderate Risk\\\\\\\\\\n(1)',
     isLowModerateRisk,
     isLowModerateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -340,18 +339,18 @@ function drawCha2ds2vascAlgorithm(
   drawBox(
     ctx, 
     3*width/4 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Moderate-High Risk\\\\\\\\\n(≥2)',
+    'Moderate-High Risk\\\\\\\\\\n(≥2)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
   
-  // Draw arrows from score to risk categories with more spacing
-  drawElbowConnector(ctx, width/2 - 40, 170, width/4, 220, 'Score = 0', isLowRisk);
-  drawElbowConnector(ctx, width/2, 170, width/2, 220, 'Score = 1', isLowModerateRisk);
-  drawElbowConnector(ctx, width/2 + 40, 170, 3*width/4, 220, 'Score ≥ 2', isHighRisk);
+  // Draw arrows from score to risk categories
+  drawElbowConnector(ctx, width/2 - 40, 190, width/4, 240, 'Score = 0', isLowRisk);
+  drawElbowConnector(ctx, width/2, 190, width/2, 240, 'Score = 1', isLowModerateRisk);
+  drawElbowConnector(ctx, width/2 + 40, 190, 3*width/4, 240, 'Score ≥ 2', isHighRisk);
 }
 
 function drawFib4Algorithm(
@@ -361,21 +360,21 @@ function drawFib4Algorithm(
 ) {
   const width = ctx.canvas.width / window.devicePixelRatio;
   const height = ctx.canvas.height / window.devicePixelRatio;
-  const boxWidth = 140; // Increased from 120
-  const boxHeight = 60; // Increased from 50
+  const boxWidth = 140;
+  const boxHeight = 70;
   
   // Calculate FIB-4 score
   const fib4Score = (inputs.age * inputs.ast) / (inputs.platelets * Math.sqrt(inputs.alt));
   const roundedScore = parseFloat(fib4Score.toFixed(2));
   
   // Draw formula box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'FIB-4 = (Age × AST) /\\\\\\\\\n(Platelets × √ALT)');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'FIB-4 = (Age × AST) /\\\\\\\\\\n(Platelets × √ALT)');
   
   // Draw score box
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    110, // Increased spacing
+    120,
     boxWidth, 
     boxHeight, 
     `Score: ${roundedScore}`,
@@ -384,7 +383,7 @@ function drawFib4Algorithm(
   );
   
   // Draw arrow from formula to score
-  drawElbowConnector(ctx, width/2, 80, width/2, 110, '', true);
+  drawElbowConnector(ctx, width/2, 90, width/2, 120, '', true);
   
   // Age-specific thresholds
   const isUnder65 = inputs.age < 65;
@@ -396,19 +395,19 @@ function drawFib4Algorithm(
     const isHighRisk = fib4Score > 2.67;
     
     // Draw age decision box
-    drawBox(ctx, width/2 - boxWidth/2, 190, boxWidth, boxHeight, 'Age < 65 years', true);
+    drawBox(ctx, width/2 - boxWidth/2, 200, boxWidth, boxHeight, 'Age < 65 years', true);
     
     // Draw arrow from score to age decision
-    drawElbowConnector(ctx, width/2, 170, width/2, 190, '', true);
+    drawElbowConnector(ctx, width/2, 190, width/2, 200, '', true);
     
     // Draw risk categories
     drawBox(
       ctx, 
       width/4 - boxWidth/2, 
-      280, // Increased spacing
+      300,
       boxWidth, 
       boxHeight, 
-      'Low Fibrosis\\\\\\\\\n(<1.30)',
+      'Low Fibrosis\\\\\\\\\\n(<1.30)',
       isLowRisk,
       isLowRisk ? '#dcfce7' : '#e2e8f0'
     );
@@ -416,10 +415,10 @@ function drawFib4Algorithm(
     drawBox(
       ctx, 
       width/2 - boxWidth/2, 
-      280, // Increased spacing
+      300,
       boxWidth, 
       boxHeight, 
-      'Intermediate\\\\\\\\\n(1.30-2.67)',
+      'Intermediate\\\\\\\\\\n(1.30-2.67)',
       isIntermediateRisk,
       isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
     );
@@ -427,18 +426,18 @@ function drawFib4Algorithm(
     drawBox(
       ctx, 
       3*width/4 - boxWidth/2, 
-      280, // Increased spacing
+      300,
       boxWidth, 
       boxHeight, 
-      'Advanced Fibrosis\\\\\\\\\n(>2.67)',
+      'Advanced Fibrosis\\\\\\\\\\n(>2.67)',
       isHighRisk,
       isHighRisk ? '#fee2e2' : '#e2e8f0'
     );
     
-    // Draw arrows from age to risk categories with more spacing
-    drawElbowConnector(ctx, width/2 - 40, 250, width/4, 280, '<1.30', isLowRisk);
-    drawElbowConnector(ctx, width/2, 250, width/2, 280, '1.30-2.67', isIntermediateRisk);
-    drawElbowConnector(ctx, width/2 + 40, 250, 3*width/4, 280, '>2.67', isHighRisk);
+    // Draw arrows from age to risk categories
+    drawElbowConnector(ctx, width/2 - 40, 270, width/4, 300, '<1.30', isLowRisk);
+    drawElbowConnector(ctx, width/2, 270, width/2, 300, '1.30-2.67', isIntermediateRisk);
+    drawElbowConnector(ctx, width/2 + 40, 270, 3*width/4, 300, '>2.67', isHighRisk);
   } else {
     // For patients ≥ 65 years - adjusted thresholds
     const isLowRisk = fib4Score < 2.0;
@@ -446,19 +445,19 @@ function drawFib4Algorithm(
     const isHighRisk = fib4Score > 4.0;
     
     // Draw age decision box
-    drawBox(ctx, width/2 - boxWidth/2, 190, boxWidth, boxHeight, 'Age ≥ 65 years', true);
+    drawBox(ctx, width/2 - boxWidth/2, 200, boxWidth, boxHeight, 'Age ≥ 65 years', true);
     
     // Draw arrow from score to age decision
-    drawElbowConnector(ctx, width/2, 170, width/2, 190, '', true);
+    drawElbowConnector(ctx, width/2, 190, width/2, 200, '', true);
     
     // Draw risk categories
     drawBox(
       ctx, 
       width/4 - boxWidth/2, 
-      280, // Increased spacing
+      300,
       boxWidth, 
       boxHeight, 
-      'Low Fibrosis\\\\\\\\\n(<2.0)',
+      'Low Fibrosis\\\\\\\\\\n(<2.0)',
       isLowRisk,
       isLowRisk ? '#dcfce7' : '#e2e8f0'
     );
@@ -466,10 +465,10 @@ function drawFib4Algorithm(
     drawBox(
       ctx, 
       width/2 - boxWidth/2, 
-      280, // Increased spacing
+      300,
       boxWidth, 
       boxHeight, 
-      'Intermediate\\\\\\\\\n(2.0-4.0)',
+      'Intermediate\\\\\\\\\\n(2.0-4.0)',
       isIntermediateRisk,
       isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
     );
@@ -477,18 +476,18 @@ function drawFib4Algorithm(
     drawBox(
       ctx, 
       3*width/4 - boxWidth/2, 
-      280, // Increased spacing
+      300,
       boxWidth, 
       boxHeight, 
-      'Advanced Fibrosis\\\\\\\\\n(>4.0)',
+      'Advanced Fibrosis\\\\\\\\\\n(>4.0)',
       isHighRisk,
       isHighRisk ? '#fee2e2' : '#e2e8f0'
     );
     
-    // Draw arrows from age to risk categories with more spacing
-    drawElbowConnector(ctx, width/2 - 40, 250, width/4, 280, '<2.0', isLowRisk);
-    drawElbowConnector(ctx, width/2, 250, width/2, 280, '2.0-4.0', isIntermediateRisk);
-    drawElbowConnector(ctx, width/2 + 40, 250, 3*width/4, 280, '>4.0', isHighRisk);
+    // Draw arrows from age to risk categories
+    drawElbowConnector(ctx, width/2 - 40, 270, width/4, 300, '<2.0', isLowRisk);
+    drawElbowConnector(ctx, width/2, 270, width/2, 300, '2.0-4.0', isIntermediateRisk);
+    drawElbowConnector(ctx, width/2 + 40, 270, 3*width/4, 300, '>4.0', isHighRisk);
   }
 }
 
@@ -499,8 +498,8 @@ function drawDas28Algorithm(
 ) {
   const width = ctx.canvas.width / window.devicePixelRatio;
   const height = ctx.canvas.height / window.devicePixelRatio;
-  const boxWidth = 140; // Increased from 120
-  const boxHeight = 60; // Increased from 50
+  const boxWidth = 140;
+  const boxHeight = 70;
   
   // Calculate DAS28 score
   const das28Score = 
@@ -518,7 +517,7 @@ function drawDas28Algorithm(
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    110, // Increased spacing
+    120,
     boxWidth, 
     boxHeight, 
     `Score: ${roundedScore}`,
@@ -527,7 +526,7 @@ function drawDas28Algorithm(
   );
   
   // Draw arrow from formula to score
-  drawElbowConnector(ctx, width/2, 80, width/2, 110, '', true);
+  drawElbowConnector(ctx, width/2, 90, width/2, 120, '', true);
   
   // Determine disease activity
   const isRemission = das28Score <= 2.6;
@@ -541,10 +540,10 @@ function drawDas28Algorithm(
   drawBox(
     ctx, 
     categoryWidth * 0.5 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Remission\\\\\\\\\n(≤2.6)',
+    'Remission\\\\\\\\\\n(≤2.6)',
     isRemission,
     isRemission ? '#dcfce7' : '#e2e8f0'
   );
@@ -552,10 +551,10 @@ function drawDas28Algorithm(
   drawBox(
     ctx, 
     categoryWidth * 1.75 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Low Activity\\\\\\\\\n(2.61-3.2)',
+    'Low Activity\\\\\\\\\\n(2.61-3.2)',
     isLowActivity,
     isLowActivity ? '#d1fae5' : '#e2e8f0'
   );
@@ -563,10 +562,10 @@ function drawDas28Algorithm(
   drawBox(
     ctx, 
     categoryWidth * 3 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'Moderate Activity\\\\\\\\\n(3.21-5.1)',
+    'Moderate Activity\\\\\\\\\\n(3.21-5.1)',
     isModerateActivity,
     isModerateActivity ? '#fef9c3' : '#e2e8f0'
   );
@@ -574,19 +573,19 @@ function drawDas28Algorithm(
   drawBox(
     ctx, 
     categoryWidth * 4.25 - boxWidth/2, 
-    220, // Increased spacing
+    240,
     boxWidth, 
     boxHeight, 
-    'High Activity\\\\\\\\\n(>5.1)',
+    'High Activity\\\\\\\\\\n(>5.1)',
     isHighActivity,
     isHighActivity ? '#fee2e2' : '#e2e8f0'
   );
   
-  // Draw arrows from score to disease activity categories with better spacing
-  drawElbowConnector(ctx, width/2 - 60, 170, categoryWidth * 0.5, 220, '≤2.6', isRemission);
-  drawElbowConnector(ctx, width/2 - 20, 170, categoryWidth * 1.75, 220, '2.61-3.2', isLowActivity);
-  drawElbowConnector(ctx, width/2 + 20, 170, categoryWidth * 3, 220, '3.21-5.1', isModerateActivity);
-  drawElbowConnector(ctx, width/2 + 60, 170, categoryWidth * 4.25, 220, '>5.1', isHighActivity);
+  // Draw arrows from score to disease activity categories
+  drawElbowConnector(ctx, width/2 - 60, 190, categoryWidth * 0.5, 240, '≤2.6', isRemission);
+  drawElbowConnector(ctx, width/2 - 20, 190, categoryWidth * 1.75, 240, '2.61-3.2', isLowActivity);
+  drawElbowConnector(ctx, width/2 + 20, 190, categoryWidth * 3, 240, '3.21-5.1', isModerateActivity);
+  drawElbowConnector(ctx, width/2 + 60, 190, categoryWidth * 4.25, 240, '>5.1', isHighActivity);
 }
 
 function drawGenericAlgorithm(
@@ -595,8 +594,8 @@ function drawGenericAlgorithm(
 ) {
   const width = ctx.canvas.width / window.devicePixelRatio;
   const height = ctx.canvas.height / window.devicePixelRatio;
-  const boxWidth = 140; // Increased from 120
-  const boxHeight = 60; // Increased from 50
+  const boxWidth = 140;
+  const boxHeight = 70;
   
   // Draw start box
   drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'Score Calculation');
@@ -605,7 +604,7 @@ function drawGenericAlgorithm(
   drawBox(
     ctx, 
     width/2 - boxWidth/2, 
-    110, // Increased spacing
+    120,
     boxWidth, 
     boxHeight, 
     `Score: ${result.score}`,
@@ -614,13 +613,13 @@ function drawGenericAlgorithm(
   );
   
   // Draw arrow from start to score
-  drawElbowConnector(ctx, width/2, 80, width/2, 110, '', true);
+  drawElbowConnector(ctx, width/2, 90, width/2, 120, '', true);
   
   // Draw interpretation box
   drawBox(
     ctx, 
     width/2 - boxWidth*1.5/2, 
-    220, // Increased spacing
+    240,
     boxWidth*1.5, 
     boxHeight, 
     result.interpretation,
@@ -631,5 +630,5 @@ function drawGenericAlgorithm(
   );
   
   // Draw arrow from score to interpretation
-  drawElbowConnector(ctx, width/2, 170, width/2, 220, '', true);
+  drawElbowConnector(ctx, width/2, 190, width/2, 240, '', true);
 }

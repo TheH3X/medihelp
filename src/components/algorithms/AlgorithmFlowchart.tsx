@@ -43,7 +43,7 @@ export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps)
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-[600px] relative"> {/* Increased height from 500px to 600px */}
+        <div className="w-full h-[600px] relative">
           <canvas 
             ref={canvasRef} 
             className="w-full h-full"
@@ -126,12 +126,12 @@ function calculateNodePositions(
   }
   
   // Position nodes by level with increased vertical spacing
-  const levelHeight = height / (levels.length + 1) * 0.9; // Use 90% of available height
+  const levelHeight = height / (levels.length + 1) * 0.8; // Use 80% of available height
   
   levels.forEach((level, levelIndex) => {
     // Increase horizontal spacing between nodes
-    const nodeWidth = 140; // Increased from 120
-    const horizontalSpacing = 60; // Space between nodes
+    const nodeWidth = 160; // Increased node width
+    const horizontalSpacing = 80; // Increased space between nodes
     const totalWidth = level.length * nodeWidth + (level.length - 1) * horizontalSpacing;
     const startX = (width - totalWidth) / 2;
     
@@ -164,7 +164,7 @@ function drawConnections(
     if (node.branches) {
       // Calculate horizontal offsets for multiple branches
       const branchCount = node.branches.length;
-      const branchSpacing = 30; // Pixels between branch starting points
+      const branchSpacing = 40; // Increased pixels between branch starting points
       const totalWidth = (branchCount - 1) * branchSpacing;
       const startOffset = -totalWidth / 2;
       
@@ -183,9 +183,9 @@ function drawConnections(
         drawElbowConnector(
           ctx,
           nodePos.x + offset, // Add offset to starting x position
-          nodePos.y + 30, // Bottom of the node
+          nodePos.y + 40, // Bottom of the node
           targetPos.x,
-          targetPos.y - 30, // Top of the target node
+          targetPos.y - 40, // Top of the target node
           branch.label,
           isInPath
         );
@@ -228,10 +228,10 @@ function drawNodes(
     // Draw the node with increased width
     drawBox(
       ctx,
-      pos.x - 70, // Increased width from 60 to 70
-      pos.y - 30, // Increased height from 25 to 30
-      140, // Increased width from 120 to 140
-      60, // Increased height from 50 to 60
+      pos.x - 80, // Increased width
+      pos.y - 40, // Increased height
+      160, // Increased width
+      80, // Increased height
       node.content,
       isInPath,
       color
@@ -249,7 +249,7 @@ function drawBox(
   isHighlighted: boolean = false,
   color: string = '#e2e8f0'
 ) {
-  const radius = 6;
+  const radius = 8;
   
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -274,37 +274,37 @@ function drawBox(
   
   // Text
   ctx.fillStyle = '#1e293b';
-  ctx.font = '12px sans-serif';
+  ctx.font = '14px sans-serif'; // Increased font size
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
   // Handle multiline text with word wrapping
+  const maxWidth = width - 20;
   const words = text.split(' ');
+  const lines: string[] = [];
   let line = '';
-  const lines = [];
-  const maxWidth = width - 16; // Reduced padding for more text space
   
   for (let i = 0; i < words.length; i++) {
     const testLine = line + words[i] + ' ';
     const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
     
-    if (testWidth > maxWidth && i > 0) {
+    if (metrics.width > maxWidth && i > 0) {
       lines.push(line);
       line = words[i] + ' ';
     } else {
       line = testLine;
     }
   }
+  
   lines.push(line);
   
-  // Limit to 3 lines and add ellipsis if needed
-  if (lines.length > 3) {
-    lines[2] = lines[2].substring(0, lines[2].length - 4) + '...';
-    lines.splice(3);
+  // Limit to 4 lines and add ellipsis if needed
+  if (lines.length > 4) {
+    lines[3] = lines[3].substring(0, lines[3].length - 4) + '...';
+    lines.splice(4);
   }
   
-  const lineHeight = 16;
+  const lineHeight = 18; // Increased line height
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   
   lines.forEach((line, i) => {
@@ -312,7 +312,6 @@ function drawBox(
   });
 }
 
-// Function to draw elbow connectors with increased height
 function drawElbowConnector(
   ctx: CanvasRenderingContext2D, 
   fromX: number, 
@@ -322,9 +321,8 @@ function drawElbowConnector(
   text: string = '',
   isHighlighted: boolean = false
 ) {
-  // Calculate the midpoint Y position with increased height
-  // Use 70% of the vertical distance instead of 50% to make the elbow higher
-  const midY = fromY + (toY - fromY) * 0.7;
+  // Calculate the midpoint Y position
+  const midY = fromY + (toY - fromY) * 0.5;
   
   // Draw the elbow connector (three segments)
   ctx.beginPath();
@@ -355,27 +353,26 @@ function drawElbowConnector(
   ctx.fillStyle = isHighlighted ? '#d97706' : '#94a3b8';
   ctx.fill();
   
-  // Draw text near the horizontal segment with better positioning
+  // Draw text near the horizontal segment with background
   if (text) {
-    ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    
-    // Create a background for the text to improve readability
+    // Create a background for the text
     const textMetrics = ctx.measureText(text);
-    const textWidth = textMetrics.width + 8;
-    const textHeight = 16;
+    const padding = 4;
+    const textWidth = textMetrics.width + padding * 2;
+    const textHeight = 20;
     
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.fillRect(
       (fromX + toX) / 2 - textWidth / 2,
-      midY - textHeight - 4,
+      midY - textHeight - padding,
       textWidth,
       textHeight
     );
     
     // Draw the text
     ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
-    ctx.fillText(text, (fromX + toX) / 2, midY - 10);
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, (fromX + toX) / 2, midY - padding - textHeight/2 + 4);
   }
 }
