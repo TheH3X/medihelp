@@ -17,17 +17,14 @@ export function ParameterItem({ parameter }: ParameterItemProps) {
   const displayValue = parameter.unit 
     ? `${formattedValue} ${parameter.unit}`
     : formattedValue;
-    
-  // Format the timestamp as a relative time (e.g., "2 minutes ago")
-  const timeAgo = new Date(parameter.timestamp).toLocaleTimeString();
 
   return (
     <Card className="relative">
-      <CardContent className="p-3">
+      <CardContent className="p-2">
         <Button 
           variant="ghost" 
           size="icon" 
-          className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive"
+          className="absolute top-0 right-0 h-6 w-6 text-muted-foreground hover:text-destructive"
           onClick={() => removeParameter(parameter.id)}
         >
           <X className="h-3 w-3" />
@@ -36,8 +33,7 @@ export function ParameterItem({ parameter }: ParameterItemProps) {
         
         <div className="pr-6">
           <div className="font-medium text-sm">{parameter.name}</div>
-          <div className="text-base">{displayValue}</div>
-          <div className="text-xs text-muted-foreground mt-1">{timeAgo}</div>
+          <div className="text-sm">{displayValue}</div>
         </div>
       </CardContent>
     </Card>

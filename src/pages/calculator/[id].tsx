@@ -10,7 +10,7 @@ import { ResultsDisplay } from "@/components/results/ResultsDisplay";
 import { AlgorithmDiagram } from "@/components/algorithms/AlgorithmDiagram";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calculator, AlertCircle, Save } from "lucide-react";
+import { ArrowLeft, Calculator, AlertCircle, Save, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,6 +27,7 @@ export default function CalculatorPage() {
   const [screeningComplete, setScreeningComplete] = useState(false);
   const [activeTab, setActiveTab] = useState("screening");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // Create a mapping of parameter IDs to their display names
   const parameterLabels: Record<string, string> = {};
@@ -120,8 +121,25 @@ export default function CalculatorPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 flex">
+        {/* Sidebar toggle button for mobile */}
+        <div className="md:hidden fixed bottom-4 left-4 z-10">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="rounded-full shadow-lg bg-background"
+          >
+            {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+          </Button>
+        </div>
+        
         {/* Sidebar for stored parameters */}
-        <aside className="hidden md:block w-64 border-r p-4 bg-muted/30">
+        <aside 
+          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+                     md:translate-x-0 transition-transform duration-200 ease-in-out
+                     fixed md:static z-20 h-[calc(100vh-4rem)] md:h-auto
+                     w-64 border-r p-4 bg-muted/30 shadow-lg md:shadow-none`}
+        >
           <StoredParametersList />
         </aside>
         

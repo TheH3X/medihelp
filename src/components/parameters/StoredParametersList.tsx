@@ -11,9 +11,9 @@ export function StoredParametersList() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1">
-          <h3 className="text-lg font-medium">Stored Parameters</h3>
+          <h3 className="text-base font-medium">Stored Parameters</h3>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -30,24 +30,24 @@ export function StoredParametersList() {
             variant="ghost" 
             size="sm" 
             onClick={clearParameters}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 px-2"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Clear All
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Clear
           </Button>
         )}
       </div>
       
       {parameters.length === 0 ? (
         <Alert className="bg-muted/50 border-dashed">
-          <AlertDescription className="text-center py-4">
-            <p className="text-muted-foreground mb-2">No parameters stored yet.</p>
-            <p className="text-sm">Click "Save for reuse" next to input fields to store values that can be used across multiple calculators.</p>
+          <AlertDescription className="text-center py-2 text-sm">
+            <p className="text-muted-foreground">No parameters stored yet.</p>
+            <p className="text-xs mt-1">Click "Save for reuse" next to input fields to store values.</p>
           </AlertDescription>
         </Alert>
       ) : (
         <ScrollArea className="flex-1">
-          <div className="space-y-2">
+          <div className="space-y-1">
             {parameters.map((param) => (
               <ParameterItem key={param.id} parameter={param} />
             ))}

@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useParameterStore } from "@/lib/parameter-store";
-import { Calculator, GitBranch, History, Star, Clock } from "lucide-react";
+import { Calculator, GitBranch, History, Star, Clock, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<"dashboard" | "calculators" | "algorithms">("dashboard");
   const { parameters } = useParameterStore();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // Mock recently used calculators - in a real app, this would be stored in localStorage or a database
   const [recentCalculators, setRecentCalculators] = useState<string[]>([]);
@@ -57,8 +58,25 @@ const Index = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 flex">
+        {/* Sidebar toggle button for mobile */}
+        <div className="md:hidden fixed bottom-4 left-4 z-10">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="rounded-full shadow-lg bg-background"
+          >
+            {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+          </Button>
+        </div>
+        
         {/* Sidebar for stored parameters */}
-        <aside className="hidden md:block w-64 border-r p-4 bg-muted/30">
+        <aside 
+          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+                     md:translate-x-0 transition-transform duration-200 ease-in-out
+                     fixed md:static z-20 h-[calc(100vh-4rem)] md:h-auto
+                     w-64 border-r p-4 bg-muted/30 shadow-lg md:shadow-none`}
+        >
           <StoredParametersList />
         </aside>
         
@@ -78,38 +96,7 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="dashboard">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  {/* Stored Parameters Summary */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">Stored Parameters</CardTitle>
-                      <CardDescription>
-                        Currently stored patient parameters
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {parameters.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          {parameters.slice(0, 6).map((param) => (
-                            <div key={param.id} className="flex justify-between p-2 border rounded-md">
-                              <span className="font-medium">{param.name}:</span>
-                              <span>
-                                {typeof param.value === 'boolean' 
-                                  ? (param.value ? 'Yes' : 'No') 
-                                  : param.value}
-                                {param.unit ? ` ${param.unit}` : ''}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground text-center py-4">
-                          No parameters stored yet
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                  
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
                   {/* Recent Calculators */}
                   <Card>
                     <CardHeader className="pb-3">
