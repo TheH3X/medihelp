@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Maximize2, X } from "lucide-react";
 import type { AlgorithmDefinition } from "@/lib/algorithm-definitions";
 
 interface AlgorithmFlowchartProps {
@@ -10,6 +13,7 @@ interface AlgorithmFlowchartProps {
 export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Process the algorithm to create a visualization-friendly structure
   const { nodes, edges, levels } = processAlgorithm(algorithm, path);
@@ -28,127 +32,163 @@ export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps)
     }
   }, [levels, nodes]);
   
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+  
+  // The SVG content to render in both normal and fullscreen modes
+  const renderSvgContent = (width: number, height: number) => (
+    <svg 
+      ref={svgRef}
+      width={width} 
+      height={height}
+      viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+      className="w-full h-full"
+    >
+      <defs>
+        <marker
+          id={`arrowhead${isFullscreen ? '-fullscreen' : ''}`}
+          markerWidth="10"
+          markerHeight="7"
+          refX="0"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon 
+            points="0 0, 10 3.5, 0 7" 
+            fill={path.length > 0 ? "#94a3b8" : "#94a3b8"} 
+          />
+        </marker>
+        <marker
+          id={`arrowhead-active${isFullscreen ? '-fullscreen' : ''}`}
+          markerWidth="10"
+          markerHeight="7"
+          refX="0"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon 
+            points="0 0, 10 3.5, 0 7" 
+            fill="#d97706" 
+          />
+        </marker>
+      </defs>
+      
+      {/* Draw edges first so they appear behind nodes */}
+      {edges.map((edge, index) => {
+        const isActive = path.includes(edge.source) && 
+                        path.includes(edge.target) &&
+                        path.indexOf(edge.target) === path.indexOf(edge.source) + 1;
+        
+        return (
+          <g key={`edge-${index}`}>
+            <path
+              d={`M ${edge.sourceX} ${edge.sourceY} 
+                  C ${edge.sourceX} ${edge.sourceY + 50}, 
+                    ${edge.targetX} ${edge.targetY - 50}, 
+                    ${edge.targetX} ${edge.targetY}`}
+              fill="none"
+              stroke={isActive ? "#d97706" : "#94a3b8"}
+              strokeWidth={isActive ? 2 : 1}
+              markerEnd={isActive ? 
+                `url(#arrowhead-active${isFullscreen ? '-fullscreen' : ''})` : 
+                `url(#arrowhead${isFullscreen ? '-fullscreen' : ''})`}
+            />
+            {edge.label && (
+              <g transform={`translate(${(edge.sourceX + edge.targetX) / 2}, ${(edge.sourceY + edge.targetY) / 2 - 10})`}>
+                <rect
+                  x="-40"
+                  y="-10"
+                  width="80"
+                  height="20"
+                  rx="4"
+                  fill="white"
+                  stroke={isActive ? "#d97706" : "#94a3b8"}
+                  strokeWidth="1"
+                />
+                <text
+                  x="0"
+                  y="5"
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill={isActive ? "#d97706" : "#64748b"}
+                >
+                  {edge.label}
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+      
+      {/* Draw nodes */}
+      {Object.entries(nodes).map(([id, node]) => {
+        const isActive = path.includes(id);
+        const nodeColor = getNodeColor(node.type, isActive);
+        
+        return (
+          <g key={`node-${id}`} transform={`translate(${node.x}, ${node.y})`}>
+            <rect
+              x="-75"
+              y="-40"
+              width="150"
+              height="80"
+              rx="8"
+              fill={nodeColor.fill}
+              stroke={nodeColor.stroke}
+              strokeWidth={isActive ? 2 : 1}
+            />
+            <foreignObject x="-70" y="-35" width="140" height="70">
+              <div className="h-full flex items-center justify-center">
+                <p className="text-center text-sm font-medium px-1 overflow-hidden text-ellipsis">
+                  {node.content}
+                </p>
+              </div>
+            </foreignObject>
+          </g>
+        );
+      })}
+    </svg>
+  );
+  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Algorithm Flowchart</CardTitle>
-        <CardDescription>
-          Visual representation of the algorithm with your path highlighted
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Algorithm Flowchart</CardTitle>
+            <CardDescription>
+              Visual representation of the algorithm with your path highlighted
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={toggleFullscreen}>
+            <Maximize2 className="h-4 w-4" />
+            <span className="ml-2">Fullscreen</span>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="w-full h-[600px] overflow-auto border rounded-md bg-white dark:bg-gray-900">
-          <svg 
-            ref={svgRef}
-            width={dimensions.width} 
-            height={dimensions.height}
-            viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-            className="w-full h-full"
-          >
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="7"
-                refX="0"
-                refY="3.5"
-                orient="auto"
-              >
-                <polygon 
-                  points="0 0, 10 3.5, 0 7" 
-                  fill={path.length > 0 ? "#94a3b8" : "#94a3b8"} 
-                />
-              </marker>
-              <marker
-                id="arrowhead-active"
-                markerWidth="10"
-                markerHeight="7"
-                refX="0"
-                refY="3.5"
-                orient="auto"
-              >
-                <polygon 
-                  points="0 0, 10 3.5, 0 7" 
-                  fill="#d97706" 
-                />
-              </marker>
-            </defs>
-            
-            {/* Draw edges first so they appear behind nodes */}
-            {edges.map((edge, index) => {
-              const isActive = path.includes(edge.source) && 
-                              path.includes(edge.target) &&
-                              path.indexOf(edge.target) === path.indexOf(edge.source) + 1;
-              
-              return (
-                <g key={`edge-${index}`}>
-                  <path
-                    d={`M ${edge.sourceX} ${edge.sourceY} 
-                        C ${edge.sourceX} ${edge.sourceY + 50}, 
-                          ${edge.targetX} ${edge.targetY - 50}, 
-                          ${edge.targetX} ${edge.targetY}`}
-                    fill="none"
-                    stroke={isActive ? "#d97706" : "#94a3b8"}
-                    strokeWidth={isActive ? 2 : 1}
-                    markerEnd={isActive ? "url(#arrowhead-active)" : "url(#arrowhead)"}
-                  />
-                  {edge.label && (
-                    <g transform={`translate(${(edge.sourceX + edge.targetX) / 2}, ${(edge.sourceY + edge.targetY) / 2 - 10})`}>
-                      <rect
-                        x="-40"
-                        y="-10"
-                        width="80"
-                        height="20"
-                        rx="4"
-                        fill="white"
-                        stroke={isActive ? "#d97706" : "#94a3b8"}
-                        strokeWidth="1"
-                      />
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fontSize="12"
-                        fill={isActive ? "#d97706" : "#64748b"}
-                      >
-                        {edge.label}
-                      </text>
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-            
-            {/* Draw nodes */}
-            {Object.entries(nodes).map(([id, node]) => {
-              const isActive = path.includes(id);
-              const nodeColor = getNodeColor(node.type, isActive);
-              
-              return (
-                <g key={`node-${id}`} transform={`translate(${node.x}, ${node.y})`}>
-                  <rect
-                    x="-75"
-                    y="-40"
-                    width="150"
-                    height="80"
-                    rx="8"
-                    fill={nodeColor.fill}
-                    stroke={nodeColor.stroke}
-                    strokeWidth={isActive ? 2 : 1}
-                  />
-                  <foreignObject x="-70" y="-35" width="140" height="70">
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-center text-sm font-medium px-1 overflow-hidden text-ellipsis">
-                        {node.content}
-                      </p>
-                    </div>
-                  </foreignObject>
-                </g>
-              );
-            })}
-          </svg>
+          {renderSvgContent(dimensions.width, dimensions.height)}
         </div>
       </CardContent>
+      
+      {/* Fullscreen Dialog */}
+      <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh]">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              <span>Algorithm Flowchart - {algorithm.name}</span>
+              <Button variant="ghost" size="sm" onClick={() => setIsFullscreen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="w-full h-[calc(95vh-100px)] overflow-auto bg-white dark:bg-gray-900 border rounded-md">
+            {renderSvgContent(dimensions.width * 1.5, dimensions.height * 1.5)}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
