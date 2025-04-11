@@ -81,7 +81,7 @@ function calculateNodePositions(
   const positions: Record<string, { x: number, y: number }> = {};
   const nodes = algorithm.nodes;
   
-  // Create a graph representation
+  // Step 1: Create a directed graph representation
   const graph: Record<string, string[]> = {};
   const inDegree: Record<string, number> = {};
   
@@ -102,12 +102,9 @@ function calculateNodePositions(
     }
   });
   
-  // Find all roots (nodes with no incoming edges)
-  const roots = Object.keys(nodes).filter(nodeId => inDegree[nodeId] === 0);
-  
-  // Perform a topological sort to get levels
+  // Step 2: Perform topological sort to get levels
   const levels: string[][] = [];
-  let current = [...roots];
+  let current = Object.keys(nodes).filter(nodeId => inDegree[nodeId] === 0);
   
   while (current.length > 0) {
     levels.push([...current]);
@@ -125,20 +122,22 @@ function calculateNodePositions(
     current = next;
   }
   
-  // Position nodes by level with increased vertical spacing
-  const levelHeight = height / (levels.length + 1) * 0.8; // Use 80% of available height
+  // Step 3: Position nodes by level
+  const nodeWidth = 180;
+  const nodeHeight = 80;
+  const horizontalSpacing = 60;
+  const verticalSpacing = 100;
   
   levels.forEach((level, levelIndex) => {
-    // Increase horizontal spacing between nodes
-    const nodeWidth = 160; // Increased node width
-    const horizontalSpacing = 80; // Increased space between nodes
-    const totalWidth = level.length * nodeWidth + (level.length - 1) * horizontalSpacing;
-    const startX = (width - totalWidth) / 2;
+    // Calculate total width needed for this level
+    const levelWidth = level.length * nodeWidth + (level.length - 1) * horizontalSpacing;
+    const startX = (width - levelWidth) / 2;
     
+    // Position each node in the level
     level.forEach((nodeId, nodeIndex) => {
       positions[nodeId] = {
         x: startX + nodeIndex * (nodeWidth + horizontalSpacing) + nodeWidth / 2,
-        y: levelHeight * (levelIndex + 1)
+        y: 50 + levelIndex * (nodeHeight + verticalSpacing) + nodeHeight / 2
       };
     });
   });
@@ -162,10 +161,10 @@ function drawConnections(
     if (!nodePos) return; // Skip if position is not defined
     
     if (node.branches) {
-      // Calculate horizontal offsets for multiple branches
+      // Calculate branch spacing based on number of branches
       const branchCount = node.branches.length;
-      const branchSpacing = 40; // Increased pixels between branch starting points
-      const totalWidth = (branchCount - 1) * branchSpacing;
+      const totalWidth = 120; // Maximum width for all branches
+      const branchSpacing = branchCount > 1 ? totalWidth / (branchCount - 1) : 0;
       const startOffset = -totalWidth / 2;
       
       node.branches.forEach((branch, index) => {
@@ -173,14 +172,14 @@ function drawConnections(
         if (!targetPos) return; // Skip if target position is not defined
         
         // Calculate offset for this branch
-        const offset = startOffset + index * branchSpacing;
+        const offset = branchCount > 1 ? startOffset + index * branchSpacing : 0;
         
         // Check if this connection is part of the path
         const isInPath = path.includes(nodeId) && path.includes(branch.nextNodeId) &&
                          path.indexOf(branch.nextNodeId) === path.indexOf(nodeId) + 1;
         
-        // Draw the connection with elbow connector
-        drawElbowConnector(
+        // Draw the connection
+        drawConnection(
           ctx,
           nodePos.x + offset, // Add offset to starting x position
           nodePos.y + 40, // Bottom of the node
@@ -192,6 +191,81 @@ function drawConnections(
       });
     }
   });
+}
+
+function drawConnection(
+  ctx: CanvasRenderingContext2D, 
+  fromX: number, 
+  fromY: number, 
+  toX: number, 
+  toY: number,
+  text: string = '',
+  isHighlighted: boolean = false
+) {
+  // Calculate control points for a smooth curve
+  const midY = fromY + (toY - fromY) * 0.5;
+  
+  // Draw the path
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  
+  // Use a bezier curve for smoother connections
+  ctx.bezierCurveTo(
+    fromX, midY, // First control point
+    toX, midY,   // Second control point
+    toX, toY     // End point
+  );
+  
+  // Set line style
+  ctx.strokeStyle = isHighlighted ? '#d97706' : '#94a3b8';
+  ctx.lineWidth = isHighlighted ? 2 : 1;
+  ctx.stroke();
+  
+  // Draw arrowhead
+  const headLength = 10;
+  const angle = Math.atan2(toY - midY, toX - fromX);
+  
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle - Math.PI / 6),
+    toY - headLength * Math.sin(angle - Math.PI / 6)
+  );
+  ctx.lineTo(
+    toX - headLength * Math.cos(angle + Math.PI / 6),
+    toY - headLength * Math.sin(angle + Math.PI / 6)
+  );
+  ctx.closePath();
+  ctx.fillStyle = isHighlighted ? '#d97706' : '#94a3b8';
+  ctx.fill();
+  
+  // Draw text if provided
+  if (text) {
+    // Create a background for the text
+    const textMetrics = ctx.measureText(text);
+    const padding = 4;
+    const textWidth = textMetrics.width + padding * 2;
+    const textHeight = 20;
+    
+    // Position text near the middle of the curve
+    const textX = (fromX + toX) / 2;
+    const textY = midY - 15;
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(
+      textX - textWidth / 2,
+      textY - textHeight / 2,
+      textWidth,
+      textHeight
+    );
+    
+    // Draw the text
+    ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, textX, textY);
+  }
 }
 
 function drawNodes(
@@ -225,13 +299,13 @@ function drawNodes(
       color = '#fef9c3'; // Light yellow for results
     }
     
-    // Draw the node with increased width
+    // Draw the node
     drawBox(
       ctx,
-      pos.x - 80, // Increased width
-      pos.y - 40, // Increased height
-      160, // Increased width
-      80, // Increased height
+      pos.x - 90, // Width = 180
+      pos.y - 40, // Height = 80
+      180,
+      80,
       node.content,
       isInPath,
       color
@@ -251,6 +325,7 @@ function drawBox(
 ) {
   const radius = 8;
   
+  // Draw rounded rectangle
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.lineTo(x + width - radius, y);
@@ -274,7 +349,7 @@ function drawBox(
   
   // Text
   ctx.fillStyle = '#1e293b';
-  ctx.font = '14px sans-serif'; // Increased font size
+  ctx.font = '14px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
@@ -304,75 +379,10 @@ function drawBox(
     lines.splice(4);
   }
   
-  const lineHeight = 18; // Increased line height
+  const lineHeight = 18;
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   
   lines.forEach((line, i) => {
     ctx.fillText(line.trim(), x + width / 2, startY + i * lineHeight);
   });
-}
-
-function drawElbowConnector(
-  ctx: CanvasRenderingContext2D, 
-  fromX: number, 
-  fromY: number, 
-  toX: number, 
-  toY: number,
-  text: string = '',
-  isHighlighted: boolean = false
-) {
-  // Calculate the midpoint Y position
-  const midY = fromY + (toY - fromY) * 0.5;
-  
-  // Draw the elbow connector (three segments)
-  ctx.beginPath();
-  ctx.moveTo(fromX, fromY); // Start point
-  ctx.lineTo(fromX, midY); // Vertical line from start
-  ctx.lineTo(toX, midY);   // Horizontal line
-  ctx.lineTo(toX, toY);    // Vertical line to end
-  
-  ctx.strokeStyle = isHighlighted ? '#d97706' : '#94a3b8';
-  ctx.lineWidth = isHighlighted ? 2 : 1;
-  ctx.stroke();
-  
-  // Draw arrowhead at the end
-  const headLength = 10;
-  const angle = Math.PI / 2; // Pointing down
-  
-  ctx.beginPath();
-  ctx.moveTo(toX, toY);
-  ctx.lineTo(
-    toX - headLength * Math.cos(angle - Math.PI / 6),
-    toY - headLength * Math.sin(angle - Math.PI / 6)
-  );
-  ctx.lineTo(
-    toX - headLength * Math.cos(angle + Math.PI / 6),
-    toY - headLength * Math.sin(angle + Math.PI / 6)
-  );
-  ctx.closePath();
-  ctx.fillStyle = isHighlighted ? '#d97706' : '#94a3b8';
-  ctx.fill();
-  
-  // Draw text near the horizontal segment with background
-  if (text) {
-    // Create a background for the text
-    const textMetrics = ctx.measureText(text);
-    const padding = 4;
-    const textWidth = textMetrics.width + padding * 2;
-    const textHeight = 20;
-    
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillRect(
-      (fromX + toX) / 2 - textWidth / 2,
-      midY - textHeight - padding,
-      textWidth,
-      textHeight
-    );
-    
-    // Draw the text
-    ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, (fromX + toX) / 2, midY - padding - textHeight/2 + 4);
-  }
 }
