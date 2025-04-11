@@ -163,8 +163,8 @@ function drawConnections(
         const isInPath = path.includes(nodeId) && path.includes(branch.nextNodeId) &&
                          path.indexOf(branch.nextNodeId) === path.indexOf(nodeId) + 1;
         
-        // Draw the connection
-        drawArrow(
+        // Draw the connection with elbow connector
+        drawElbowConnector(
           ctx,
           nodePos.x,
           nodePos.y + 25, // Bottom of the node
@@ -294,7 +294,8 @@ function drawBox(
   });
 }
 
-function drawArrow(
+// New function to draw elbow connectors instead of straight lines
+function drawElbowConnector(
   ctx: CanvasRenderingContext2D, 
   fromX: number, 
   fromY: number, 
@@ -303,18 +304,24 @@ function drawArrow(
   text: string = '',
   isHighlighted: boolean = false
 ) {
-  const headLength = 10;
-  const angle = Math.atan2(toY - fromY, toX - fromX);
+  // Calculate the midpoint Y position
+  const midY = fromY + (toY - fromY) / 2;
   
-  // Draw line
+  // Draw the elbow connector (three segments)
   ctx.beginPath();
-  ctx.moveTo(fromX, fromY);
-  ctx.lineTo(toX, toY);
+  ctx.moveTo(fromX, fromY); // Start point
+  ctx.lineTo(fromX, midY); // Vertical line from start
+  ctx.lineTo(toX, midY);   // Horizontal line
+  ctx.lineTo(toX, toY);    // Vertical line to end
+  
   ctx.strokeStyle = isHighlighted ? '#d97706' : '#94a3b8';
   ctx.lineWidth = isHighlighted ? 2 : 1;
   ctx.stroke();
   
-  // Draw arrowhead
+  // Draw arrowhead at the end
+  const headLength = 10;
+  const angle = Math.PI / 2; // Pointing down
+  
   ctx.beginPath();
   ctx.moveTo(toX, toY);
   ctx.lineTo(
@@ -329,13 +336,13 @@ function drawArrow(
   ctx.fillStyle = isHighlighted ? '#d97706' : '#94a3b8';
   ctx.fill();
   
-  // Draw text
+  // Draw text near the horizontal segment
   if (text) {
-    const textX = (fromX + toX) / 2;
-    const textY = (fromY + toY) / 2 - 10;
     ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(text, textX, textY);
+    
+    // Position text above the horizontal line
+    ctx.fillText(text, (fromX + toX) / 2, midY - 10);
   }
 }
