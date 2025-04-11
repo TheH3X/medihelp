@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AlgorithmDefinition } from "@/lib/algorithm-definitions";
 
@@ -8,31 +8,25 @@ interface AlgorithmFlowchartProps {
 }
 
 export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   
+  // Process the algorithm to create a visualization-friendly structure
+  const { nodes, edges, levels } = processAlgorithm(algorithm, path);
+  
+  // Update dimensions based on content
   useEffect(() => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Set canvas dimensions
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * dpr;
-    canvas.height = canvas.offsetHeight * dpr;
-    ctx.scale(dpr, dpr);
-    
-    // Reset canvas styles
-    canvas.style.width = `${canvas.offsetWidth}px`;
-    canvas.style.height = `${canvas.offsetHeight}px`;
-    
-    // Draw the flowchart
-    drawFlowchart(ctx, algorithm, path);
-  }, [algorithm, path]);
+    if (svgRef.current) {
+      const containerWidth = svgRef.current.parentElement?.clientWidth || 800;
+      const levelCount = levels.length;
+      const nodeCount = Object.keys(nodes).length;
+      
+      setDimensions({
+        width: containerWidth,
+        height: Math.max(600, levelCount * 150 + 100)
+      });
+    }
+  }, [levels, nodes]);
   
   return (
     <Card>
@@ -43,67 +37,165 @@ export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps)
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-[600px] relative">
-          <canvas 
-            ref={canvasRef} 
+        <div className="w-full h-[600px] overflow-auto border rounded-md bg-white dark:bg-gray-900">
+          <svg 
+            ref={svgRef}
+            width={dimensions.width} 
+            height={dimensions.height}
+            viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
             className="w-full h-full"
-          />
+          >
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="7"
+                refX="0"
+                refY="3.5"
+                orient="auto"
+              >
+                <polygon 
+                  points="0 0, 10 3.5, 0 7" 
+                  fill={path.length > 0 ? "#94a3b8" : "#94a3b8"} 
+                />
+              </marker>
+              <marker
+                id="arrowhead-active"
+                markerWidth="10"
+                markerHeight="7"
+                refX="0"
+                refY="3.5"
+                orient="auto"
+              >
+                <polygon 
+                  points="0 0, 10 3.5, 0 7" 
+                  fill="#d97706" 
+                />
+              </marker>
+            </defs>
+            
+            {/* Draw edges first so they appear behind nodes */}
+            {edges.map((edge, index) => {
+              const isActive = path.includes(edge.source) && 
+                              path.includes(edge.target) &&
+                              path.indexOf(edge.target) === path.indexOf(edge.source) + 1;
+              
+              return (
+                <g key={`edge-${index}`}>
+                  <path
+                    d={`M ${edge.sourceX} ${edge.sourceY} 
+                        C ${edge.sourceX} ${edge.sourceY + 50}, 
+                          ${edge.targetX} ${edge.targetY - 50}, 
+                          ${edge.targetX} ${edge.targetY}`}
+                    fill="none"
+                    stroke={isActive ? "#d97706" : "#94a3b8"}
+                    strokeWidth={isActive ? 2 : 1}
+                    markerEnd={isActive ? "url(#arrowhead-active)" : "url(#arrowhead)"}
+                  />
+                  {edge.label && (
+                    <g transform={`translate(${(edge.sourceX + edge.targetX) / 2}, ${(edge.sourceY + edge.targetY) / 2 - 10})`}>
+                      <rect
+                        x="-40"
+                        y="-10"
+                        width="80"
+                        height="20"
+                        rx="4"
+                        fill="white"
+                        stroke={isActive ? "#d97706" : "#94a3b8"}
+                        strokeWidth="1"
+                      />
+                      <text
+                        x="0"
+                        y="5"
+                        textAnchor="middle"
+                        fontSize="12"
+                        fill={isActive ? "#d97706" : "#64748b"}
+                      >
+                        {edge.label}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+            
+            {/* Draw nodes */}
+            {Object.entries(nodes).map(([id, node]) => {
+              const isActive = path.includes(id);
+              const nodeColor = getNodeColor(node.type, isActive);
+              
+              return (
+                <g key={`node-${id}`} transform={`translate(${node.x}, ${node.y})`}>
+                  <rect
+                    x="-75"
+                    y="-40"
+                    width="150"
+                    height="80"
+                    rx="8"
+                    fill={nodeColor.fill}
+                    stroke={nodeColor.stroke}
+                    strokeWidth={isActive ? 2 : 1}
+                  />
+                  <foreignObject x="-70" y="-35" width="140" height="70">
+                    <div xmlns="http://www.w3.org/1999/xhtml" className="h-full flex items-center justify-center">
+                      <p className="text-center text-sm font-medium px-1 overflow-hidden text-ellipsis">
+                        {node.content}
+                      </p>
+                    </div>
+                  </foreignObject>
+                </g>
+              );
+            })}
+          </svg>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// Helper functions for drawing
-function drawFlowchart(
-  ctx: CanvasRenderingContext2D, 
-  algorithm: AlgorithmDefinition,
-  path: string[]
-) {
-  const width = ctx.canvas.width / window.devicePixelRatio;
-  const height = ctx.canvas.height / window.devicePixelRatio;
+// Helper function to process the algorithm into a visualization-friendly structure
+function processAlgorithm(algorithm: AlgorithmDefinition, activePath: string[]) {
+  const nodes: Record<string, {
+    id: string;
+    content: string;
+    type: string;
+    x: number;
+    y: number;
+    level: number;
+  }> = {};
   
-  // Create a map of node positions
-  const nodePositions = calculateNodePositions(algorithm, width, height);
+  const edges: Array<{
+    source: string;
+    target: string;
+    sourceX: number;
+    sourceY: number;
+    targetX: number;
+    targetY: number;
+    label?: string;
+  }> = [];
   
-  // Draw connections between nodes
-  drawConnections(ctx, algorithm, nodePositions, path);
-  
-  // Draw nodes
-  drawNodes(ctx, algorithm, nodePositions, path);
-}
-
-function calculateNodePositions(
-  algorithm: AlgorithmDefinition,
-  width: number,
-  height: number
-): Record<string, { x: number, y: number }> {
-  const positions: Record<string, { x: number, y: number }> = {};
-  const nodes = algorithm.nodes;
-  
-  // Create a graph representation
+  // Create a graph representation for topological sorting
   const graph: Record<string, string[]> = {};
   const inDegree: Record<string, number> = {};
   
   // Initialize
-  Object.keys(nodes).forEach(nodeId => {
-    graph[nodeId] = [];
-    inDegree[nodeId] = 0;
+  Object.entries(algorithm.nodes).forEach(([id, node]) => {
+    graph[id] = [];
+    inDegree[id] = 0;
   });
   
   // Build the graph
-  Object.keys(nodes).forEach(nodeId => {
-    const node = nodes[nodeId];
+  Object.entries(algorithm.nodes).forEach(([id, node]) => {
     if (node.branches) {
       node.branches.forEach(branch => {
-        graph[nodeId].push(branch.nextNodeId);
+        graph[id].push(branch.nextNodeId);
         inDegree[branch.nextNodeId] = (inDegree[branch.nextNodeId] || 0) + 1;
       });
     }
   });
   
   // Find all roots (nodes with no incoming edges)
-  const roots = Object.keys(nodes).filter(nodeId => inDegree[nodeId] === 0);
+  const roots = Object.keys(algorithm.nodes).filter(id => inDegree[id] === 0);
   
   // Perform a topological sort to get levels
   const levels: string[][] = [];
@@ -113,8 +205,8 @@ function calculateNodePositions(
     levels.push([...current]);
     const next: string[] = [];
     
-    current.forEach(nodeId => {
-      graph[nodeId].forEach(childId => {
+    current.forEach(id => {
+      graph[id].forEach(childId => {
         inDegree[childId]--;
         if (inDegree[childId] === 0) {
           next.push(childId);
@@ -125,254 +217,91 @@ function calculateNodePositions(
     current = next;
   }
   
-  // Position nodes by level with significantly increased vertical spacing
-  const levelHeight = height / (levels.length + 1) * 0.7; // Use 70% of available height
+  // Position nodes by level
+  const nodeWidth = 150;
+  const nodeHeight = 80;
+  const levelHeight = 150;
+  const horizontalPadding = 50;
   
   levels.forEach((level, levelIndex) => {
-    // Significantly increase horizontal spacing between nodes
-    const nodeWidth = 180; // Increased node width
-    const horizontalSpacing = 120; // Significantly increased space between nodes
-    const totalWidth = level.length * nodeWidth + (level.length - 1) * horizontalSpacing;
-    const startX = (width - totalWidth) / 2;
+    const levelWidth = level.length * nodeWidth + (level.length - 1) * horizontalPadding;
+    const startX = levelWidth < 800 ? (800 - levelWidth) / 2 : horizontalPadding;
     
-    level.forEach((nodeId, nodeIndex) => {
-      positions[nodeId] = {
-        x: startX + nodeIndex * (nodeWidth + horizontalSpacing) + nodeWidth / 2,
-        y: levelHeight * (levelIndex + 1)
+    level.forEach((id, nodeIndex) => {
+      const node = algorithm.nodes[id];
+      const x = startX + nodeIndex * (nodeWidth + horizontalPadding) + nodeWidth / 2;
+      const y = levelHeight * (levelIndex + 1);
+      
+      nodes[id] = {
+        id,
+        content: node.content,
+        type: node.type,
+        x,
+        y,
+        level: levelIndex
       };
     });
   });
   
-  return positions;
-}
-
-function drawConnections(
-  ctx: CanvasRenderingContext2D,
-  algorithm: AlgorithmDefinition,
-  positions: Record<string, { x: number, y: number }>,
-  path: string[]
-) {
-  const nodes = algorithm.nodes;
-  
-  // Draw connections
-  Object.keys(nodes).forEach(nodeId => {
-    const node = nodes[nodeId];
-    const nodePos = positions[nodeId];
-    
-    if (!nodePos) return; // Skip if position is not defined
-    
+  // Create edges
+  Object.entries(algorithm.nodes).forEach(([id, node]) => {
     if (node.branches) {
-      // Calculate horizontal offsets for multiple branches
-      const branchCount = node.branches.length;
-      const branchSpacing = 60; // Significantly increased pixels between branch starting points
-      const totalWidth = (branchCount - 1) * branchSpacing;
-      const startOffset = -totalWidth / 2;
-      
-      node.branches.forEach((branch, index) => {
-        const targetPos = positions[branch.nextNodeId];
-        if (!targetPos) return; // Skip if target position is not defined
+      node.branches.forEach(branch => {
+        const sourceNode = nodes[id];
+        const targetNode = nodes[branch.nextNodeId];
         
-        // Calculate offset for this branch
-        const offset = startOffset + index * branchSpacing;
-        
-        // Check if this connection is part of the path
-        const isInPath = path.includes(nodeId) && path.includes(branch.nextNodeId) &&
-                         path.indexOf(branch.nextNodeId) === path.indexOf(nodeId) + 1;
-        
-        // Draw the connection with elbow connector
-        drawElbowConnector(
-          ctx,
-          nodePos.x + offset, // Add offset to starting x position
-          nodePos.y + 50, // Bottom of the node - increased height
-          targetPos.x,
-          targetPos.y - 50, // Top of the target node - increased height
-          branch.label,
-          isInPath
-        );
+        if (sourceNode && targetNode) {
+          edges.push({
+            source: id,
+            target: branch.nextNodeId,
+            sourceX: sourceNode.x,
+            sourceY: sourceNode.y + nodeHeight / 2,
+            targetX: targetNode.x,
+            targetY: targetNode.y - nodeHeight / 2,
+            label: branch.label
+          });
+        }
       });
     }
   });
+  
+  return { nodes, edges, levels };
 }
 
-function drawNodes(
-  ctx: CanvasRenderingContext2D,
-  algorithm: AlgorithmDefinition,
-  positions: Record<string, { x: number, y: number }>,
-  path: string[]
-) {
-  const nodes = algorithm.nodes;
-  
-  // Draw nodes
-  Object.keys(nodes).forEach(nodeId => {
-    const node = nodes[nodeId];
-    const pos = positions[nodeId];
-    
-    if (!pos) return; // Skip if position is not defined
-    
-    // Check if this node is in the path
-    const isInPath = path.includes(nodeId);
-    
-    // Determine node color based on type
-    let color = '#e2e8f0'; // Default color
-    
-    if (node.type === 'question') {
-      color = '#e2e8f0'; // Light gray for questions
-    } else if (node.type === 'decision') {
-      color = '#dbeafe'; // Light blue for decisions
-    } else if (node.type === 'action') {
-      color = '#dcfce7'; // Light green for actions
-    } else if (node.type === 'result') {
-      color = '#fef9c3'; // Light yellow for results
-    }
-    
-    // Draw the node with increased width and height
-    drawBox(
-      ctx,
-      pos.x - 90, // Increased width
-      pos.y - 50, // Increased height
-      180, // Increased width
-      100, // Increased height
-      node.content,
-      isInPath,
-      color
-    );
-  });
-}
-
-function drawBox(
-  ctx: CanvasRenderingContext2D, 
-  x: number, 
-  y: number, 
-  width: number, 
-  height: number, 
-  text: string, 
-  isHighlighted: boolean = false,
-  color: string = '#e2e8f0'
-) {
-  const radius = 8;
-  
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-  
-  // Fill
-  ctx.fillStyle = isHighlighted ? '#f59e0b' : color;
-  ctx.fill();
-  
-  // Border
-  ctx.strokeStyle = isHighlighted ? '#d97706' : '#94a3b8';
-  ctx.lineWidth = isHighlighted ? 2 : 1;
-  ctx.stroke();
-  
-  // Text
-  ctx.fillStyle = '#1e293b';
-  ctx.font = '16px sans-serif'; // Increased font size
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  
-  // Handle multiline text with word wrapping
-  const maxWidth = width - 20;
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let line = '';
-  
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line + words[i] + ' ';
-    const metrics = ctx.measureText(testLine);
-    
-    if (metrics.width > maxWidth && i > 0) {
-      lines.push(line);
-      line = words[i] + ' ';
-    } else {
-      line = testLine;
-    }
+// Helper function to get node color based on type and active state
+function getNodeColor(type: string, isActive: boolean) {
+  if (isActive) {
+    return {
+      fill: "#fef3c7", // amber-100
+      stroke: "#d97706"  // amber-600
+    };
   }
   
-  lines.push(line);
-  
-  // Limit to 4 lines and add ellipsis if needed
-  if (lines.length > 4) {
-    lines[3] = lines[3].substring(0, lines[3].length - 4) + '...';
-    lines.splice(4);
-  }
-  
-  const lineHeight = 20; // Increased line height
-  const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
-  
-  lines.forEach((line, i) => {
-    ctx.fillText(line.trim(), x + width / 2, startY + i * lineHeight);
-  });
-}
-
-function drawElbowConnector(
-  ctx: CanvasRenderingContext2D, 
-  fromX: number, 
-  fromY: number, 
-  toX: number, 
-  toY: number,
-  text: string = '',
-  isHighlighted: boolean = false
-) {
-  // Calculate the midpoint Y position - adjusted to create more vertical space
-  const midY = fromY + (toY - fromY) * 0.4; // Changed from 0.5 to 0.4 to create more vertical space
-  
-  // Draw the elbow connector (three segments)
-  ctx.beginPath();
-  ctx.moveTo(fromX, fromY); // Start point
-  ctx.lineTo(fromX, midY); // Vertical line from start
-  ctx.lineTo(toX, midY);   // Horizontal line
-  ctx.lineTo(toX, toY);    // Vertical line to end
-  
-  ctx.strokeStyle = isHighlighted ? '#d97706' : '#94a3b8';
-  ctx.lineWidth = isHighlighted ? 2 : 1;
-  ctx.stroke();
-  
-  // Draw arrowhead at the end
-  const headLength = 12; // Increased size
-  const angle = Math.PI / 2; // Pointing down
-  
-  ctx.beginPath();
-  ctx.moveTo(toX, toY);
-  ctx.lineTo(
-    toX - headLength * Math.cos(angle - Math.PI / 6),
-    toY - headLength * Math.sin(angle - Math.PI / 6)
-  );
-  ctx.lineTo(
-    toX - headLength * Math.cos(angle + Math.PI / 6),
-    toY - headLength * Math.sin(angle + Math.PI / 6)
-  );
-  ctx.closePath();
-  ctx.fillStyle = isHighlighted ? '#d97706' : '#94a3b8';
-  ctx.fill();
-  
-  // Draw text near the horizontal segment with background
-  if (text) {
-    // Create a background for the text
-    const textMetrics = ctx.measureText(text);
-    const padding = 6;
-    const textWidth = textMetrics.width + padding * 2;
-    const textHeight = 22;
-    
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillRect(
-      (fromX + toX) / 2 - textWidth / 2,
-      midY - textHeight - padding,
-      textWidth,
-      textHeight
-    );
-    
-    // Draw the text
-    ctx.fillStyle = isHighlighted ? '#d97706' : '#64748b';
-    ctx.font = '14px sans-serif'; // Increased font size
-    ctx.textAlign = 'center';
-    ctx.fillText(text, (fromX + toX) / 2, midY - padding - textHeight/2 + 4);
+  switch (type) {
+    case 'question':
+      return {
+        fill: "#e2e8f0", // slate-200
+        stroke: "#94a3b8"  // slate-400
+      };
+    case 'decision':
+      return {
+        fill: "#dbeafe", // blue-100
+        stroke: "#60a5fa"  // blue-400
+      };
+    case 'action':
+      return {
+        fill: "#dcfce7", // green-100
+        stroke: "#4ade80"  // green-400
+      };
+    case 'result':
+      return {
+        fill: "#fef9c3", // yellow-100
+        stroke: "#facc15"  // yellow-400
+      };
+    default:
+      return {
+        fill: "#e2e8f0", // slate-200
+        stroke: "#94a3b8"  // slate-400
+      };
   }
 }
