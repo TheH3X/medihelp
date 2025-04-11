@@ -1,62 +1,43 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, Printer, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
+import { Copy, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import type { AlgorithmResult as AlgorithmResultType } from "@/lib/algorithm-definitions";
+import type { AlgorithmNode } from "@/lib/algorithm-definitions";
 
 interface AlgorithmResultProps {
   algorithmName: string;
-  result: AlgorithmResultType;
-  pathHistory: Array<{
-    stepId: string;
-    stepTitle: string;
-    inputs: Record<string, any>;
-    parameterLabels: Record<string, string>;
-  }>;
+  finalNode: AlgorithmNode;
+  path: string[];
+  inputs: Record<string, any>;
 }
 
-export function AlgorithmResult({ algorithmName, result, pathHistory }: AlgorithmResultProps) {
+export function AlgorithmResult({ algorithmName, finalNode, path, inputs }: AlgorithmResultProps) {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("web");
   
-  const formatPathHistory = () => {
-    return pathHistory.map(step => {
-      const inputSummary = Object.entries(step.inputs)
-        .map(([key, value]) => {
-          const label = step.parameterLabels[key] || key;
-          const displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
-          return `${label}: ${displayValue}`;
-        })
-        .join(', ');
-      
-      return `${step.stepTitle}: ${inputSummary}`;
-    }).join('\\n');
-  };
+  // Generate clinical text format
+  const clinicalText = formatClinicalText({
+    algorithmName,
+    finalNode,
+    path,
+    inputs
+  });
   
-  const formatClinicalText = () => {
-    return `${algorithmName} Results\\n\\n` +
-      `Recommendation: ${result.title}\\n` +
-      `${result.description}\\n\\n` +
-      `Action: ${result.recommendation}\\n\\n` +
-      `Decision Path:\\n${formatPathHistory()}`;
-  };
-  
-  const formatPrinterFriendly = () => {
-    return `${algorithmName} Results\\n\\n` +
-      `Date: ${new Date().toLocaleDateString()}\\n\\n` +
-      `Recommendation: ${result.title}\\n` +
-      `${result.description}\\n\\n` +
-      `Action: ${result.recommendation}\\n\\n` +
-      `Decision Path:\\n${formatPathHistory()}\\n\\n` +
-      `This assessment was generated using the Clinical Algorithm App.`;
-  };
+  // Generate printer-friendly format
+  const printerFriendlyText = formatPrinterFriendly({
+    algorithmName,
+    finalNode,
+    path,
+    inputs
+  });
   
   const handleCopyText = () => {
-    const textToCopy = formatClinicalText();
+    const textToCopy = activeTab === "clinical" ? clinicalText : printerFriendlyText;
     navigator.clipboard.writeText(textToCopy);
     toast({
       title: "Copied to clipboard",
-      description: "The clinical text has been copied to your clipboard.",
+      description: "The text has been copied to your clipboard.",
     });
   };
   
@@ -75,7 +56,7 @@ export function AlgorithmResult({ algorithmName, result, pathHistory }: Algorith
           </head>
           <body>
             <h1>${algorithmName} Results</h1>
-            <pre>${formatPrinterFriendly()}</pre>
+            <pre>${printerFriendlyText}</pre>
           </body>
         </html>
       `);
@@ -85,113 +66,107 @@ export function AlgorithmResult({ algorithmName, result, pathHistory }: Algorith
     }
   };
   
-  const getSeverityIcon = () => {
-    switch (result.severity) {
-      case 'low':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'moderate':
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-      case 'high':
-      case 'very-high':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return null;
-    }
-  };
-  
-  const getSeverityColor = () => {
-    switch (result.severity) {
-      case 'low':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
-      case 'moderate':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100';
-      case 'high':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
-      case 'very-high':
-        return 'bg-red-200 text-red-900 dark:bg-red-950 dark:text-red-50';
-      default:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            {result.title}
-            {getSeverityIcon()}
-          </CardTitle>
-          <Badge className={getSeverityColor()}>
-            {result.severity === 'very-high' ? 'Very High Priority' :
-             result.severity === 'high' ? 'High Priority' :
-             result.severity === 'moderate' ? 'Moderate Priority' : 'Low Priority'}
-          </Badge>
-        </div>
+        <CardTitle>Algorithm Results</CardTitle>
         <CardDescription>
-          {result.description}
+          {algorithmName} algorithm results
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="border rounded-md p-4 bg-muted/30">
-          <h3 className="font-medium mb-2">Recommendation</h3>
-          <p>{result.recommendation}</p>
-        </div>
-        
-        {result.additionalData && (
-          <div className="border rounded-md p-4">
-            <h3 className="font-medium mb-2">Additional Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(result.additionalData).map(([key, value]) => (
-                <div key={key}>
-                  <h4 className="text-sm font-medium capitalize">{key}</h4>
-                  {Array.isArray(value) ? (
-                    <ul className="list-disc pl-5 text-sm">
-                      {value.map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm">{value}</p>
-                  )}
-                </div>
-              ))}
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium">Final Result</h3>
+            <div className="p-4 border rounded-md bg-muted/30">
+              <h4 className="font-medium">{finalNode.content}</h4>
+              {finalNode.description && (
+                <p className="text-muted-foreground mt-1">{finalNode.description}</p>
+              )}
             </div>
           </div>
-        )}
-        
-        <div className="border rounded-md p-4">
-          <h3 className="font-medium mb-2">Decision Path</h3>
-          <div className="space-y-2">
-            {pathHistory.map((step, index) => (
-              <div key={index} className="text-sm">
-                <span className="font-medium">{index + 1}. {step.stepTitle}</span>
-                <ul className="list-disc pl-5 mt-1">
-                  {Object.entries(step.inputs).map(([key, value]) => {
-                    const label = step.parameterLabels[key] || key;
-                    const displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
-                    return (
-                      <li key={key}>
-                        {label}: <span className="font-medium">{displayValue}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+          
+          {finalNode.recommendations && finalNode.recommendations.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium">Recommendations</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                {finalNode.recommendations.map((rec, index) => (
+                  <li key={index}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleCopyText}>
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Text
+            </Button>
+            <Button variant="outline" onClick={handlePrint}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-        <Button variant="outline" onClick={handleCopyText}>
-          <Copy className="mr-2 h-4 w-4" />
-          Copy Clinical Text
-        </Button>
-        <Button variant="outline" onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print
-        </Button>
-      </CardFooter>
     </Card>
   );
+}
+
+// Helper functions for formatting results
+function formatClinicalText({ 
+  algorithmName, 
+  finalNode, 
+  path, 
+  inputs 
+}: { 
+  algorithmName: string; 
+  finalNode: AlgorithmNode; 
+  path: string[]; 
+  inputs: Record<string, any>; 
+}): string {
+  // Format recommendations
+  const recommendationsText = finalNode.recommendations ? 
+    finalNode.recommendations.map(rec => `- ${rec}`).join("\\n") : 
+    "No specific recommendations provided.";
+  
+  return `${algorithmName} Assessment\\n\\n` +
+    `Result: ${finalNode.content}\\n` +
+    `${finalNode.description ? finalNode.description + "\\n\\n" : "\\n"}` +
+    `Recommendations:\\n${recommendationsText}`;
+}
+
+function formatPrinterFriendly({ 
+  algorithmName, 
+  finalNode, 
+  path, 
+  inputs 
+}: { 
+  algorithmName: string; 
+  finalNode: AlgorithmNode; 
+  path: string[]; 
+  inputs: Record<string, any>; 
+}): string {
+  // Format recommendations
+  const recommendationsText = finalNode.recommendations ? 
+    finalNode.recommendations.map(rec => `- ${rec}`).join("\\n") : 
+    "No specific recommendations provided.";
+  
+  // Format inputs
+  const inputsText = Object.entries(inputs)
+    .map(([key, value]) => {
+      if (typeof value === 'boolean') {
+        return `${key}: ${value ? 'Yes' : 'No'}`;
+      }
+      return `${key}: ${value}`;
+    })
+    .join("\\n");
+  
+  return `${algorithmName} Assessment\\n\\n` +
+    `Date: ${new Date().toLocaleDateString()}\\n\\n` +
+    `Result: ${finalNode.content}\\n` +
+    `${finalNode.description ? finalNode.description + "\\n\\n" : "\\n"}` +
+    `Recommendations:\\n${recommendationsText}\\n\\n` +
+    `Inputs:\\n${inputsText}\\n\\n` +
+    `This assessment was generated using the Clinical Calculator App.`;
 }
