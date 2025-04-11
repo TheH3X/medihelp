@@ -137,7 +137,7 @@ export function AlgorithmFlowchart({ algorithm, path }: AlgorithmFlowchartProps)
                     strokeWidth={isActive ? 2 : 1}
                   />
                   <foreignObject x="-70" y="-35" width="140" height="70">
-                    <div xmlns="http://www.w3.org/1999/xhtml" className="h-full flex items-center justify-center">
+                    <div className="h-full flex items-center justify-center">
                       <p className="text-center text-sm font-medium px-1 overflow-hidden text-ellipsis">
                         {node.content}
                       </p>
