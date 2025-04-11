@@ -105,7 +105,7 @@ function drawBox(
   ctx.textBaseline = 'middle';
   
   // Handle multiline text
-  const lines = text.split('\\\\\\\\\n');
+  const lines = text.split('\\\\\\\\\\n');
   const lineHeight = 16;
   const startY = y + height / 2 - ((lines.length - 1) * lineHeight) / 2;
   
@@ -203,7 +203,7 @@ function drawHasbledAlgorithm(
   if (inputs.labilePTINR) score += 1;
   
   // Draw start box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'HAS-BLED\\\\\\\\\\nScore Calculation');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'HAS-BLED\\\\\\\\\\\nScore Calculation');
   
   // Draw score box
   drawBox(
@@ -232,7 +232,7 @@ function drawHasbledAlgorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\\\\\\\n(0-1)',
+    'Low Risk\\\\\\\\\\\n(0-1)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -244,7 +244,7 @@ function drawHasbledAlgorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Intermediate Risk\\\\\\\\\\n(2-3)',
+    'Intermediate Risk\\\\\\\\\\\n(2-3)',
     isIntermediateRisk,
     isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -256,7 +256,7 @@ function drawHasbledAlgorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'High Risk\\\\\\\\\\n(≥4)',
+    'High Risk\\\\\\\\\\\n(≥4)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
@@ -289,7 +289,7 @@ function drawCha2ds2vascAlgorithm(
   if (inputs.gender === 'female') score += 1;
   
   // Draw start box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CHA₂DS₂-VASc\\\\\\\\\\nScore Calculation');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'CHA₂DS₂-VASc\\\\\\\\\\\nScore Calculation');
   
   // Draw score box
   drawBox(
@@ -318,7 +318,7 @@ function drawCha2ds2vascAlgorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Low Risk\\\\\\\\\\n(0)',
+    'Low Risk\\\\\\\\\\\n(0)',
     isLowRisk,
     isLowRisk ? '#dcfce7' : '#e2e8f0'
   );
@@ -330,7 +330,7 @@ function drawCha2ds2vascAlgorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Low-Moderate Risk\\\\\\\\\\n(1)',
+    'Low-Moderate Risk\\\\\\\\\\\n(1)',
     isLowModerateRisk,
     isLowModerateRisk ? '#fef9c3' : '#e2e8f0'
   );
@@ -342,7 +342,7 @@ function drawCha2ds2vascAlgorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Moderate-High Risk\\\\\\\\\\n(≥2)',
+    'Moderate-High Risk\\\\\\\\\\\n(≥2)',
     isHighRisk,
     isHighRisk ? '#fee2e2' : '#e2e8f0'
   );
@@ -368,7 +368,7 @@ function drawFib4Algorithm(
   const roundedScore = parseFloat(fib4Score.toFixed(2));
   
   // Draw formula box
-  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'FIB-4 = (Age × AST) /\\\\\\\\\\n(Platelets × √ALT)');
+  drawBox(ctx, width/2 - boxWidth/2, 20, boxWidth, boxHeight, 'FIB-4 = (Age × AST) /\\\\\\\\\\\n(Platelets × √ALT)');
   
   // Draw score box
   drawBox(
@@ -407,7 +407,7 @@ function drawFib4Algorithm(
       300,
       boxWidth, 
       boxHeight, 
-      'Low Fibrosis\\\\\\\\\\n(<1.30)',
+      'Low Fibrosis\\\\\\\\\\\n(<1.30)',
       isLowRisk,
       isLowRisk ? '#dcfce7' : '#e2e8f0'
     );
@@ -418,7 +418,7 @@ function drawFib4Algorithm(
       300,
       boxWidth, 
       boxHeight, 
-      'Intermediate\\\\\\\\\\n(1.30-2.67)',
+      'Intermediate\\\\\\\\\\\n(1.30-2.67)',
       isIntermediateRisk,
       isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
     );
@@ -429,7 +429,7 @@ function drawFib4Algorithm(
       300,
       boxWidth, 
       boxHeight, 
-      'Advanced Fibrosis\\\\\\\\\\n(>2.67)',
+      'Advanced Fibrosis\\\\\\\\\\\n(>2.67)',
       isHighRisk,
       isHighRisk ? '#fee2e2' : '#e2e8f0'
     );
@@ -457,7 +457,7 @@ function drawFib4Algorithm(
       300,
       boxWidth, 
       boxHeight, 
-      'Low Fibrosis\\\\\\\\\\n(<2.0)',
+      'Low Fibrosis\\\\\\\\\\\n(<2.0)',
       isLowRisk,
       isLowRisk ? '#dcfce7' : '#e2e8f0'
     );
@@ -468,7 +468,7 @@ function drawFib4Algorithm(
       300,
       boxWidth, 
       boxHeight, 
-      'Intermediate\\\\\\\\\\n(2.0-4.0)',
+      'Intermediate\\\\\\\\\\\n(2.0-4.0)',
       isIntermediateRisk,
       isIntermediateRisk ? '#fef9c3' : '#e2e8f0'
     );
@@ -479,7 +479,7 @@ function drawFib4Algorithm(
       300,
       boxWidth, 
       boxHeight, 
-      'Advanced Fibrosis\\\\\\\\\\n(>4.0)',
+      'Advanced Fibrosis\\\\\\\\\\\n(>4.0)',
       isHighRisk,
       isHighRisk ? '#fee2e2' : '#e2e8f0'
     );
@@ -543,7 +543,7 @@ function drawDas28Algorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Remission\\\\\\\\\\n(≤2.6)',
+    'Remission\\\\\\\\\\\n(≤2.6)',
     isRemission,
     isRemission ? '#dcfce7' : '#e2e8f0'
   );
@@ -554,7 +554,7 @@ function drawDas28Algorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Low Activity\\\\\\\\\\n(2.61-3.2)',
+    'Low Activity\\\\\\\\\\\n(2.61-3.2)',
     isLowActivity,
     isLowActivity ? '#d1fae5' : '#e2e8f0'
   );
@@ -565,7 +565,7 @@ function drawDas28Algorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'Moderate Activity\\\\\\\\\\n(3.21-5.1)',
+    'Moderate Activity\\\\\\\\\\\n(3.21-5.1)',
     isModerateActivity,
     isModerateActivity ? '#fef9c3' : '#e2e8f0'
   );
@@ -576,7 +576,7 @@ function drawDas28Algorithm(
     240,
     boxWidth, 
     boxHeight, 
-    'High Activity\\\\\\\\\\n(>5.1)',
+    'High Activity\\\\\\\\\\\n(>5.1)',
     isHighActivity,
     isHighActivity ? '#fee2e2' : '#e2e8f0'
   );

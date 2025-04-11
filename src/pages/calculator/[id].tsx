@@ -7,7 +7,7 @@ import { StoredParametersList } from "@/components/parameters/StoredParametersLi
 import { InputField } from "@/components/calculators/InputField";
 import { ScreeningChecklist } from "@/components/calculators/ScreeningChecklist";
 import { ResultsDisplay } from "@/components/results/ResultsDisplay";
-import { AlgorithmDiagram } from "@/components/algorithms/AlgorithmDiagram";
+import { AlgorithmDiagram } from "@/components/results/AlgorithmDiagram";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calculator, AlertCircle, Save, PanelLeftClose, PanelLeftOpen } from "lucide-react";
