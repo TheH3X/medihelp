@@ -294,7 +294,7 @@ function drawBox(
   });
 }
 
-// New function to draw elbow connectors instead of straight lines
+// New function to draw elbow connectors with increased height
 function drawElbowConnector(
   ctx: CanvasRenderingContext2D, 
   fromX: number, 
@@ -304,8 +304,9 @@ function drawElbowConnector(
   text: string = '',
   isHighlighted: boolean = false
 ) {
-  // Calculate the midpoint Y position
-  const midY = fromY + (toY - fromY) / 2;
+  // Calculate the midpoint Y position with increased height
+  // Use 70% of the vertical distance instead of 50% to make the elbow higher
+  const midY = fromY + (toY - fromY) * 0.7;
   
   // Draw the elbow connector (three segments)
   ctx.beginPath();
